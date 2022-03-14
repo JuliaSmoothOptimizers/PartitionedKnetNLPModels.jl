@@ -5,15 +5,15 @@
 	
 	C = 10 # nombre de classe ≈ N 
 	layer_PS = [40,20,1] 
+	PSNet = Chain_NLL(Conv(4,4,1,20), Conv(4,4,20,50), PartitionedKnetNLPModels.SL(800,C,layer_PS[1]),  PartitionedKnetNLPModels.SL(C*layer_PS[1],C,layer_PS[2]), PartitionedKnetNLPModels.SL(C*layer_PS[2],C,layer_PS[3];f=identity))
 	PSNet = Chain_NLL(Conv(4,4,1,20), Conv(4,4,20,50), SL(800,C,layer_PS[1]),  SL(C*layer_PS[1],C,layer_PS[2]), SL(C*layer_PS[2],C,layer_PS[3];f=identity))
-
-
+	precompile_ps_struct = PartitionedKnetNLPModels.precompile_ps_struct
 	Ps_DenseNet = precompile_ps_struct(DenseNet)	
 	Ps_LeNet = precompile_ps_struct(LeNet)
 	Ps_PSNet = precompile_ps_struct(PSNet)
 
 	psd = PS_deduction(Ps_DenseNet)
-	psl = PS_deduction(Ps_LeNet)
+	pPartitionedKnetNLPModels.SL = PS_deduction(Ps_LeNet)
 	psp = PS_deduction(Ps_PSNet)
 
 	@testset "test PS DenseNet" begin
