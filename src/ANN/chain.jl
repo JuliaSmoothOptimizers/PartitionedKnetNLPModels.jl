@@ -1,7 +1,3 @@
-using KnetNLPModels
-
-# The structures <: KnetNLPModels.Chain are made to link the layers and express the loss function.
-# KnetNLPModels.Chain assume a fiel layer.
 
 #  Chain_NLL, utilisée pour faire le lien entre les différents layers.
 # Son evaluation contient également la fonction de perte negative log likehood
@@ -18,7 +14,7 @@ no_dropout(c::Chain_NLL)=map(l -> ones(Bool,input(l)), c.layers)
 no_dropout!(c::Chain_NLL,vec_dropout::Vector{Vector{Bool}}) =	map!(l-> l .= ones(Bool, length(l)), vec_dropout, c.layers)
 
 
-mutable struct Chain_PSLAP <: Chain
+mutable struct Chain_PSLAP <: KnetNLPModels.Chain
 	layers
 	Chain_PSLAP(layers...) = new(layers)
 end
@@ -45,7 +41,7 @@ function PSLAP(scores,labels::AbstractArray{<:Integer}; dims=1, average=true)
 end
 
 #PSLEP
-mutable struct Chain_PSLEP <: Chain
+mutable struct Chain_PSLEP <: KnetNLPModels.Chain
 	layers
 	Chain_PSLEP(layers...) = new(layers)
 end
@@ -68,7 +64,7 @@ function PSLEP(scores,labels::AbstractArray{<:Integer}; dims=1, average=true)
 end
 
 #PSLDP
-mutable struct Chain_PSLDP <: Chain
+mutable struct Chain_PSLDP <: KnetNLPModels.Chain
 	layers
 	Chain_PSLDP(layers...) = new(layers)
 end

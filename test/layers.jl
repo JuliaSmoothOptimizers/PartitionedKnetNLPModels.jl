@@ -1,5 +1,5 @@
 
-@testset "Layers test" begin
+@testset "ANN definition" begin
 	DenseNet = Chainnll(Dense(784,50), Dense(50,10))
 	LeNet = Chainnll(Conv(5,5,1,20), Conv(5,5,20,50), Dense(800,500), Dense(500,10,identity))
 	
@@ -22,14 +22,6 @@
 		for i in 1:length(psd)
 			@test length(psd[i]) == 39301 # == 784*50 (première couche dense) + 50 (biais) + 50 (deuxième couche dense) + 1 (biais 2e couche)
 		end 		
-	end 
-
-	@testset "test PS ANN PS" begin
-		all_dep_pss = reduce(((x,y) ->  unique!(vcat(x,y))), pss)
-		@test length(all_dep_pss) == length(vector_params(ANN_PS))
-		for i in 1:length(pss)
-			@test length(pss[i]) == 66881 
-		end 			
 	end 
 	
 end 

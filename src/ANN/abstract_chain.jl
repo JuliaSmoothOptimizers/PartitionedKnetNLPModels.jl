@@ -1,3 +1,8 @@
+using KnetNLPModels
+# The structures <: KnetNLPModels.Chain are made to link the layers and express the loss function.
+# KnetNLPModels.Chain assume a fiel layer.
+
+
 """
     precompile_ps_struct(network<:Chain)
 The function is called on a network defined by Dense/Sep_layer/Conv or an other layer that define also ps_struct(layer); index.
