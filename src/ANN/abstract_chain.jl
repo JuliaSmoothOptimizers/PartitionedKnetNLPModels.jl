@@ -29,7 +29,7 @@ end
 
 """
     PS_deduction(c,dp)
-Compute the partially separable structure of a network by the Chainnll c by a forward evaluation.
+Compute the partially separable structure of a network represented by the Chain c by performing a forward evaluation.
 """
 function PS_deduction(c::T; dp=no_dropout(c)) where T <: KnetNLPModels.Chain
 	inputs = input(c.layers[1])
