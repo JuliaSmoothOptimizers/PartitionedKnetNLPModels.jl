@@ -1,0 +1,12 @@
+name = "PartitionedKnetNLPModels"
+uuid = "8e4ecd56-36bb-44b4-aaaf-5deefd9141d8"
+authors = ["Paul Raynaud <paul.raynaud@polymtl.ca>"]
+version = "0.0.1"
+
+[deps]
+IterTools = "c8e1da08-722c-5040-9ed9-7db0dc04731e"
+Knet = "1902f260-5fb4-5aff-8c31-6271790ab950"
+KnetNLPModels = "f468eda6-eac5-11e8-05a5-ff9e497bcd19"
+MLDatasets = "eb30cadb-4394-5ae3-aed4-317e484a6458"
+PartitionedStructures = "a6683cb1-4e99-4d03-b5b5-b79ed0acabcf"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
