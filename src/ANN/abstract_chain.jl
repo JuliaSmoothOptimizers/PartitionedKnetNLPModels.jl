@@ -26,7 +26,6 @@ function precompile_ps_struct(c::T) where T <: KnetNLPModels.Chain
 	return precompiled_ps_struct
 end 
 
-
 """
     PS_deduction(c,dp)
 Compute the partially separable structure of a network represented by the Chain c by performing a forward evaluation.
@@ -42,5 +41,3 @@ function PS_deduction(c::T; dp=no_dropout(c)) where T <: KnetNLPModels.Chain
 end
 
 PS(c::T) where T <: KnetNLPModels.Chain = PS_deduction(precompile_ps_struct(c))
-
-
