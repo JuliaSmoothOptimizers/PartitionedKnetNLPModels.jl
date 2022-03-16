@@ -9,9 +9,9 @@ end
 (c::Chain_NLL)(x) = (for l in c.layers; x = l(x); end; x)
 (c::Chain_NLL)(x,y) = nll(c(x),y)  # nécessaire
 (c::Chain_NLL)(d::Knet.Data) = nll(c; data=d, average=true)
-no_dropout(c::Chain_NLL)=map(l -> ones(Bool,input(l)), c.layers) 
+# no_dropout(c::Chain_NLL)=map(l -> ones(Bool,input(l)), c.layers) 
 # à utiliser une fois que vec_dropout a été correctement initialisé
-no_dropout!(c::Chain_NLL,vec_dropout::Vector{Vector{Bool}}) =	map!(l-> l .= ones(Bool, length(l)), vec_dropout, c.layers)
+# no_dropout!(c::Chain_NLL,vec_dropout::Vector{Vector{Bool}}) =	map!(l-> l .= ones(Bool, length(l)), vec_dropout, c.layers)
 
 
 mutable struct Chain_PSLAP <: KnetNLPModels.Chain
