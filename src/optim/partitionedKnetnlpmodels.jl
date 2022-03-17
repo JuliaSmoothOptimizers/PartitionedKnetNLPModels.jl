@@ -43,7 +43,7 @@ end
 		current_minibatch_training = rand(minibatch_train)
 		current_minibatch_testing = rand(minibatch_test)
 
-		C = model.layers[end].out # assume a last layer separable 
+		C = chain_ANN.layers[end].out # assume a last layer separable 
 
     nested_array = build_nested_array_from_vec(chain_ANN, w0)
     layers_g = similar(params(chain_ANN)) # create a Vector of layer variables
