@@ -30,7 +30,7 @@ end
             data_test = begin (xtst, ytst) = MNIST.testdata(Float32); ytst[ytst.==0] .= 10; (xtst, ytst) end
             ) where C <: PartitionedChain
     w0 = vector_params(chain_ANN)
-		T = eps(w0)
+		T = eltype(w0)
     n = length(w0)
     meta = NLPModelMeta(n, x0=w0)
     
