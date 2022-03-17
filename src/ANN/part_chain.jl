@@ -62,7 +62,7 @@ function partitioned_gradient(chain :: PartChainPSLDP, data_xy, table_indices ::
 	for i in 1:C
 		for j in 1:C
 			if i != j 
-				L = Knet.@diff PSNet(data_xy)[i][j]
+				L = Knet.@diff chain(data_xy)[i][j]
 				for (index,wᵢ) in enumerate(vars)
 					tmp[index] = Param(Knet.grad(L,wᵢ))				
 				end
@@ -90,7 +90,7 @@ function partitioned_gradient!(chain :: PartChainPSLDP, data_xy, table_indices :
 		for j in 1:C
 			if i != j 
 				count += 1
-				L = Knet.@diff PSNet(data_xy)[i][j]
+				L = Knet.@diff chain(data_xy)[i][j]
 				for (index,wᵢ) in enumerate(vars)
 					tmp[index] = Param(Knet.grad(L,wᵢ))				
 				end
