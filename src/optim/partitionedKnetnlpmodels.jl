@@ -1,6 +1,6 @@
 using NLPModels
 using KnetNLPModels
-
+using CUDA
 
 mutable struct PartitionedKnetNLPModel{T, S, C <: PartitionedChain} <: AbstractKnetNLPModel{T, S}
 	meta :: NLPModelMeta{T, S}
