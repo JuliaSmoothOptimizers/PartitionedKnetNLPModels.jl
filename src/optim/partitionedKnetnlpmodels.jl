@@ -57,7 +57,6 @@ end
     return PartitionedKnetNLPModel{T, Vector{T}, C}(meta, n, C, chain_ANN, Counters(), data_train, data_test, size_minibatch, minibatch_train, minibatch_test, current_minibatch_training, current_minibatch_testing, w0, layers_g, nested_array, pv_g, epv_s, epv_work, eplom_B, table_indices)
   end
 
-
 	"""
 			set_size_minibatch!(knetnlp, size_minibatch)
 	
@@ -70,38 +69,5 @@ end
 		pknetnlp.minibatch_test = create_minibatch(pknetnlp.data_test[1], pknetnlp.data_test[2], pknetnlp.size_minibatch)
 	end
 
-	partitioned_gradient!(pknetnlp :: PartitionedKnetNLPModel) = partitioned_gradient(pknetnlp.chain, pknetnlp.current_minibatch_training, pknetnlp.table_indices, pknetnlp.epv_g)
+	partitioned_gradient!(pknetnlp :: PartitionedKnetNLPModel) = partitioned_gradient!(pknetnlp.chain, pknetnlp.current_minibatch_training, pknetnlp.table_indices, pknetnlp.epv_g)
 
-	"""
-    	f = obj(nlp, x)
-
-	Evaluate `f(x)`, the objective function of `nlp` at `x`.
-	"""
-	function NLPModels.obj(nlp :: KnetNLPModel{T, S, C}, w :: AbstractVector{T}) where {T, S, C}
-		increment!(nlp, :neval_obj)
-		set_vars!(nlp, w)
-		res = nlp.chain(nlp.current_minibatch_training)
-		f_w = sum(sum.(res))
-		return f_w
-	end
-
-	"""
-			g = grad!(nlp, x, g)
-
-	Evaluate `∇f(x)`, the gradient of the objective function at `x` in place.
-	"""
-	function NLPModels.grad!(nlp :: KnetNLPModel{T, S, C}, w :: AbstractVector{T}, g :: AbstractVector{T}) where {T, S, C}
-		@lencheck nlp.meta.nvar w g
-		increment!(nlp, :neval_grad)
-		set_vars!(nlp, w)  
-		partitioned_gradient!(nlp)
-		build_v!(nlp.epv_g)
-		g .= get_v(nlp.epv_g)
-		return g
-	end
-
-
-epv_tmp = epv_g
-epv_g = partitioned_gradient()
-
-add_epv!(epvg, minus_epv!(epv_tmp)) # compute epv_y

@@ -152,3 +152,11 @@ function compute_ratio(x::AbstractVector{T}, fₖ::T, sₖ::Vector{T}, nlp::Abst
 	isnan(ρₖ) && @show mₖ₊₁, fₖ₊₁, fₖ, norm(sₖ,2)
 	return (ρₖ,fₖ₊₁)
 end
+
+
+	
+
+epv_tmp = epv_g
+epv_g = partitioned_gradient()
+
+add_epv!(epvg, minus_epv!(epv_tmp)) # compute epv_y
