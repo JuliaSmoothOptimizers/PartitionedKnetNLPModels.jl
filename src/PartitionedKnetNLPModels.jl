@@ -1,7 +1,6 @@
 module PartitionedKnetNLPModels
 	using KnetNLPModels, PartitionedStructures
 
-	include("utils.jl")
 	include("ANN/_include.jl")
 	include("optim/_include.jl")
 
