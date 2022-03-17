@@ -103,14 +103,3 @@ function partitioned_gradient!(chain :: PartChainPSLDP, data_xy, table_indices :
 	end 
 	epv_grad
 end 
-
-
-
-
-
-s = similar(grad)
-s .= rand(length(s))
-eplom_lbfgs = eplom_lbfgs_from_epv(epv_grad)
-
-
-PLBFGS_update!(eplom_lbfgs, epv_grad, s)
