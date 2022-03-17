@@ -2,7 +2,7 @@ using NLPModels
 using KnetNLPModels
 
 
-mutable struct PartitionedKnetNLPModel{T, S, C <: PartitionedChain} <: AbstractNLPModel{T, S}
+mutable struct PartitionedKnetNLPModel{T, S, C <: PartitionedChain} <: AbstractKnetNLPModel{T, S}
 	meta :: NLPModelMeta{T, S}
 	n :: Int
 	C :: Int

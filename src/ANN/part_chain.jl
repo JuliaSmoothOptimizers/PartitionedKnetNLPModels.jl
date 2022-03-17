@@ -1,8 +1,6 @@
 # This partitioned chain assume a last layer that is a separable layer. 
 # That way we ensure that there exists C = model.layers[end].out.
 
-
-
 struct PartChainPSLDP <: PartitionedChain
 	layers
 	PartChainPSLDP(layers...) = new(layers)
