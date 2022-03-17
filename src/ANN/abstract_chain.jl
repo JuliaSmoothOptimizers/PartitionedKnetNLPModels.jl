@@ -1,7 +1,9 @@
 using KnetNLPModels
+
+abstract type PartitionedChain <: KnetNLPModels.Chain end 
+
 # The structures <: KnetNLPModels.Chain are made to link the layers and express the loss function.
 # KnetNLPModels.Chain assume a fiel layer.
-
 no_dropout!(c::T,vec_dropout::Vector{Vector{Bool}}) where T <: KnetNLPModels.Chain =	map!(l-> l .= ones(Bool, length(l)), vec_dropout, c.layers)
 no_dropout(c::T) where T <: KnetNLPModels.Chain = map(l -> ones(Bool,input(l)), c.layers) 
 
