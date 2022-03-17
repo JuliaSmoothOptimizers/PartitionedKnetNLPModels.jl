@@ -6,9 +6,13 @@ module PartitionedKnetNLPModels
 
 	export Conv, Dense, Sep_layer, SL
 	export Chain_NLL, Chain_PSLAP, Chain_PSLDP, Chain_PSLEP
-	export precompile_ps_struct, PS_deduction, PS
 	
+	export precompile_ps_struct, PS_deduction, PS
+
 	export PartitionedChain
+	export PartChainPSLDP
+	export PartitionedKnetNLPModel
+	
 
 
 end 
