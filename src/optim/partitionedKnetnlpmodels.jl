@@ -50,7 +50,7 @@ end
 		epv_g = partitioned_gradient(chain_ANN, current_minibatch_training, table_indices)
 		epv_s = similar(epv_g)
 		epv_work = similar(epv_g)
-		eplom_B = eplom_lbfgs_from_epv(epv_grad)
+		eplom_B = eplom_lbfgs_from_epv(epv_g)
 		
     return PartitionedKnetNLPModel{T, Vector{T}, C}(meta, n, C, chain_ANN, Counters(), data_train, data_test, size_minibatch, minibatch_train, minibatch_test, current_minibatch_training, current_minibatch_testing, w0, layers_g, nested_array, pv_g, epv_s, epv_work, eplom_B, table_indices)
   end
