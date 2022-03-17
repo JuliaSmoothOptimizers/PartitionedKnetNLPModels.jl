@@ -1,4 +1,4 @@
-using CUDA, KnetNLPModels, MLDatasets, NLPModels
+using CUDA, Knet, KnetNLPModels, MLDatasets, NLPModels
 
 mutable struct PartitionedKnetNLPModel{T, S, C <: PartitionedChain} <: AbstractKnetNLPModel{T, S}
 	meta :: NLPModelMeta{T, S}
@@ -24,11 +24,11 @@ mutable struct PartitionedKnetNLPModel{T, S, C <: PartitionedChain} <: AbstractK
 end
 
 
- function PartitionedKnetNLPModel(chain_ANN :: C;
+ function PartitionedKnetNLPModel(chain_ANN :: P;
             size_minibatch :: Int=100,
             data_train = begin (xtrn, ytrn) = MNIST.traindata(Float32); ytrn[ytrn.==0] .= 10; (xtrn, ytrn) end,
             data_test = begin (xtst, ytst) = MNIST.testdata(Float32); ytst[ytst.==0] .= 10; (xtst, ytst) end
-            ) where C <: PartitionedChain
+            ) where P <: PartitionedChain
     w0 = vector_params(chain_ANN)
 		T = eltype(w0)
     n = length(w0)
@@ -43,6 +43,8 @@ end
 		current_minibatch_training = rand(minibatch_train)
 		current_minibatch_testing = rand(minibatch_test)
 
+		C = model.layers[end].out # assume a last layer separable 
+
     nested_array = build_nested_array_from_vec(chain_ANN, w0)
     layers_g = similar(params(chain_ANN)) # create a Vector of layer variables
 
@@ -52,7 +54,7 @@ end
 		epv_work = similar(epv_g)
 		eplom_B = eplom_lbfgs_from_epv(epv_g)
 		
-    return PartitionedKnetNLPModel{T, Vector{T}, C}(meta, n, C, chain_ANN, Counters(), data_train, data_test, size_minibatch, minibatch_train, minibatch_test, current_minibatch_training, current_minibatch_testing, w0, layers_g, nested_array, epv_g, epv_s, epv_work, eplom_B, table_indices)
+    return PartitionedKnetNLPModel{T, Vector{T}, P}(meta, n, C, chain_ANN, Counters(), data_train, data_test, size_minibatch, minibatch_train, minibatch_test, current_minibatch_training, current_minibatch_testing, w0, layers_g, nested_array, epv_g, epv_s, epv_work, eplom_B, table_indices)
   end
 
 	"""
