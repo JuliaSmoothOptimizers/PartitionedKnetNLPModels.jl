@@ -97,7 +97,7 @@ function partitioned_gradient!(chain :: PartChainPSLDP, data_xy, table_indices :
 				vec_tmp = vcat_arrays_vector(tmp)
 				indices = table_indices[i,j]
 				grad_elt = Vector(vec_tmp[indices])
-				set_eev!(epv_grad, count, grad_elt)				
+				PartitionedStructures.set_eev!(epv_grad, count, grad_elt)				
 			end
 		end
 	end 
