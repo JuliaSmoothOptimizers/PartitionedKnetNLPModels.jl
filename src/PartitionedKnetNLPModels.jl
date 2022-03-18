@@ -12,5 +12,7 @@ module PartitionedKnetNLPModels
 	export PartitionedChain
 	export PartChainPSLDP
 	export PartitionedKnetNLPModel
+
+	export PLBFGS
 	
 end 
