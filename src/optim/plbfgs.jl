@@ -28,7 +28,7 @@ function Generic_PLBFGS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	∇fNorm2 = norm(∇f₀,2)
 
 	println("Start trust-region PLBFGS using truncated conjugate-gradient")
-	(x,iter) = TR_CG_ANLP_LO(nlp, B; max_eval=max_eval, max_time=max_time, kwargs...)
+	(x,iter) = TR_CG_ANLP_PLBFGS(nlp, B; max_eval=max_eval, max_time=max_time, kwargs...)
 
 	Δt = time() - start_time
 	g = NLPModels.grad(nlp, x)
@@ -62,7 +62,7 @@ function Generic_PLBFGS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 end
 
 
-function TR_CG_ANLP_LO(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
+function TR_CG_ANLP_PLBFGS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	x::AbstractVector{T}=copy(nlp.meta.x0),
 	n::Int=nlp.meta.nvar,
 	max_eval::Int=10000,
@@ -90,15 +90,15 @@ function TR_CG_ANLP_LO(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	∇fNorm2 = nrm2(n, ∇f₀)
 
 	fₖ = NLPModels.obj(nlp, x)
-	xone = ones(T, n)
-	Bxone = similar(xone)
-	res = similar(xone)
+	# xone = ones(T, n)
+	# Bxone = similar(xone)
+	# res = similar(xone)
 	
-	Bxone = B * xone
-	mul_prod!(res, nlp, xone)
-	println("iter : ", iter, ", norm B*ones : ", nrm2(n, Bxone), ", norm eplom_B*ones : ", nrm2(n, res))
-		
-	@printf "iter temps fₖ norm(gₖ,2) Δ ρₖ\n" 
+	# Bxone = B * xone
+	# mul_prod!(res, nlp, xone)
+	# println("iter : ", iter, ", norm B*ones : ", nrm2(n, Bxone), ", norm eplom_B*ones : ", nrm2(n, res))
+
+	@printf "iter temps fₖ norm(gₖ,2) Δ ρₖ accuracy\n" 
 
 	cgtol = one(T)  # Must be ≤ 1.
 	cgtol = max(rtol, min(T(0.1), 9 * cgtol / 10, sqrt(∇fNorm2)))
@@ -110,15 +110,10 @@ function TR_CG_ANLP_LO(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	_max_iter(iter, max_iter) = iter < max_iter
 	_max_time(start_time) = (time() - start_time) < max_time
 	while absolute(n,gₖ,ϵ) && relative(n,gₖ,ϵ,∇fNorm2) && _max_iter(iter, max_iter) & _max_time(start_time) && isnan(ρₖ)==false# stop condition
-		@printf "%3d %4g %8.1e %7.1e %7.1e %7.1e " iter (time() - start_time) fₖ norm(gₖ,2) Δ  ρₖ
-		mod(iter,1) == 0 && @printf "\tCurrent accuracy: %8.3e " accuracy(nlp)
+		@printf "%3d %4g %8.1e %7.1e %7.1e %7.1e %8.3e" iter (time() - start_time) fₖ norm(gₖ,2) Δ  ρₖ accuracy(nlp)
 
 		iter += 1
 	
-		Bxone .= B * xone
-		mul_prod!(res, nlp, xone)
-		println("iter : ", iter, ", norm B*ones : ", nrm2(n, Bxone), ", norm eplom_B*ones : ", nrm2(n, res))
-		
 		cg_res = Krylov.cg(B, - gₖ, atol=T(atol), rtol=cgtol, radius = T(Δ), itmax=max(2 * n, 50))
 		sₖ .= cg_res[1]  # result of the linear system solved by Krylov.cg
 		(ρₖ, fₖ₊₁) = compute_ratio(x, fₖ, sₖ, nlp, B, gₖ) # we compute the ratio
@@ -144,8 +139,8 @@ function TR_CG_ANLP_LO(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 		
 		# periodic printer
 	end
-	@printf "%3d %4g %8.1e %7.1e %7.1e %7.1e\n" iter (time() - start_time) fₖ norm(gₖ,2) Δ ρₖ
-	@printf "Current accuracy: %8.1e/100 " accuracy(nlp)
+	@printf "iter temps fₖ norm(gₖ,2) Δ ρₖ accuracy\n" 
+	@printf "%3d %4g %8.1e %7.1e %7.1e %7.1e %8.3e" iter (time() - start_time) fₖ norm(gₖ,2) Δ  ρₖ accuracy(nlp)
 
 	return (x, iter)
 end

@@ -2,10 +2,8 @@ using LinearOperators, NLPModels, LinearAlgebra, LinearAlgebra.BLAS, Krylov
 using Printf, SolverTools, SolverCore
 
 
-mapnan(v::AbstractVector) = mapreduce((vi-> isnan(vi)), |, v)
 
-LBFGS(nlp :: AbstractNLPModel; kwargs...) = Generic_LBFGS(nlp;kwargs...)
-LBFGS(nlp :: KnetNLPModel; kwargs...) = Generic_LBFGS(nlp; is_KnetNLPModel=true, kwargs...)
+LBFGS(nlp :: PartitionedKnetNLPModel; kwargs...) = Generic_LBFGS(nlp; is_KnetNLPModel=true, kwargs...)
 function Generic_LBFGS(nlp :: AbstractNLPModel;
 	x::AbstractVector=copy(nlp.meta.x0),
 	T::DataType = eltype(x),
@@ -15,7 +13,7 @@ function Generic_LBFGS(nlp :: AbstractNLPModel;
 	return Generic_LBFGS(nlp, B; x=x, kwargs...)
 end
 
-function Generic_LBFGS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
+function Generic_LBFGS(nlp :: PartitionedKnetNLPModel, B :: AbstractLinearOperator{T};
 	max_eval :: Int=10000,
 	max_iter::Int=10000,
 	start_time::Float64=time(),
@@ -29,7 +27,7 @@ function Generic_LBFGS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	∇fNorm2 = norm(∇f₀,2)
 
 	println("Début LBFGS TR CG")
-	(x,iter) = TR_CG_ANLP_LO(nlp, B; max_eval=max_eval, max_time=max_time, kwargs...)
+	(x,iter) = TR_CG_ANLP_LBFGS(nlp, B; max_eval=max_eval, max_time=max_time, kwargs...)
 
 	Δt = time() - start_time
 	g = NLPModels.grad(nlp, x)
@@ -63,7 +61,7 @@ function Generic_LBFGS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 end
 
 
-function TR_CG_ANLP_LO(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
+function TR_CG_ANLP_LBFGS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	x::AbstractVector=copy(nlp.meta.x0),
 	n::Int=nlp.meta.nvar,
 	max_eval::Int=10000,
@@ -88,11 +86,10 @@ function TR_CG_ANLP_LO(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	gₖ = Vector{T}(undef,n); gₖ = ∇f₀
 	gₜₘₚ = similar(gₖ)
 	∇fNorm2 = nrm2(n, ∇f₀)
-	Δₘₐₓ = Δ * ϕ^4
 
 	fₖ = NLPModels.obj(nlp, x)
 	
-	@printf "iter temps fₖ norm(gₖ,2) Δ Δₘₐₓ ρₖ\n" 
+	@printf "iter temps fₖ norm(gₖ,2) Δ ρₖ accuracy\n" 
 
 	cgtol = one(T)  # Must be ≤ 1.
 	cgtol = max(rtol, min(T(0.1), 9 * cgtol / 10, sqrt(∇fNorm2)))
@@ -104,7 +101,7 @@ function TR_CG_ANLP_LO(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	_max_iter(iter, max_iter) = iter < max_iter
 	_max_time(start_time) = (time() - start_time) < max_time
 	while absolute(n,gₖ,ϵ) && relative(n,gₖ,ϵ,∇fNorm2) && _max_iter(iter, max_iter) & _max_time(start_time) && isnan(ρₖ)==false# stop condition
-		@printf "%3d %4g %8.1e %7.1e %7.1e %7.1e " iter (time() - start_time) fₖ norm(gₖ,2) Δ  ρₖ
+		@printf "%3d %4g %8.1e %7.1e %7.1e %7.1e %8.3e" iter (time() - start_time) fₖ norm(gₖ,2) Δ  ρₖ accuracy(nlp)
 		mod(iter,5) == 0 && @printf "\tCurrent accuracy: %8.3e " accuracy(nlp)
 
 		iter += 1
@@ -113,34 +110,27 @@ function TR_CG_ANLP_LO(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 		sₖ = cg_res[1]  # result of the linear system solved by Krylov.cg
 
 
-		if iszero(sₖ) # numerical unstability of LBFGS
-			B = LBFGSOperator(T,nlp.meta.nvar, scaling=true)
-			Δ = min(Δₘₐₓ,1/ϕ*Δ)
-			@printf "norm(s= £8.1e❌❌\n" nrm2(sₖ)
-		else # usual case 
-			(ρₖ, fₖ₊₁) = compute_ratio(x, fₖ, sₖ, nlp, B, gₖ) # we compute the ratio
-			# step acceptance + update f,g
-			if ρₖ > η
-				x .= x + sₖ; gₜₘₚ .= gₖ
-				NLPModels.grad!(nlp, x, gₖ); fₖ = fₖ₊₁
-				yₖ = gₖ - gₜₘₚ; push!(B, sₖ, yₖ)
-				@printf "✅\n"
-			else
-				@printf "❌\n"
-			end				
-			# now we update ∆
-			Δₘₐₓ = Δₘₐₓ*δ
-			(ρₖ >= η₁ && norm(sₖ, 2) > 0.8*Δ) ? Δ = min(Δₘₐₓ,ϕ*Δ) : Δ = min(Δₘₐₓ,Δ)
-			(ρₖ <= η) && (Δ = min(Δₘₐₓ,1/ϕ*Δ))
-		end 
+		(ρₖ, fₖ₊₁) = compute_ratio(x, fₖ, sₖ, nlp, B, gₖ) # we compute the ratio
+		# step acceptance + update f,g
+		if ρₖ > η
+			x .= x + sₖ; gₜₘₚ .= gₖ
+			NLPModels.grad!(nlp, x, gₖ); fₖ = fₖ₊₁
+			yₖ = gₖ - gₜₘₚ; push!(B, sₖ, yₖ)
+			@printf "✅\n"
+		else
+			@printf "❌\n"
+		end				
+		# now we update ∆
+		(ρₖ >= η₁) && ((norm(sₖ, 2) > 0.8*Δ) ? Δ = ϕ*Δ : Δ = Δ)
+		(ρₖ <= η) && (Δ = (1/ϕ)*Δ)
 		
 		# on change le minibatch
 		is_KnetNLPModel && reset_minibatch_train!(nlp)
 		
 		# periodic printer
 	end
-	@printf "%3d %4g %8.1e %7.1e %7.1e %7.1e\n" iter (time() - start_time) fₖ norm(gₖ,2) Δ ρₖ
-	@printf "Current accuracy: %8.1e \% " accuracy(nlp)
+	@printf "iter temps fₖ norm(gₖ,2) Δ ρₖ accuracy\n" 
+	@printf "%3d %4g %8.1e %7.1e %7.1e %7.1e %8.3e" iter (time() - start_time) fₖ norm(gₖ,2) Δ  ρₖ accuracy(nlp)
 
 	return (x, iter)
 end
@@ -149,6 +139,5 @@ function compute_ratio(x::AbstractVector{T}, fₖ::T, sₖ::Vector{T}, nlp::Abst
 	mₖ₊₁ =  fₖ + dot(gₖ,sₖ) + 1/2 * (dot((B*sₖ),sₖ))
 	fₖ₊₁ = NLPModels.obj(nlp, x+sₖ)
 	ρₖ = (fₖ - fₖ₊₁)/(fₖ - mₖ₊₁)
-	isnan(ρₖ) && @show mₖ₊₁, fₖ₊₁, fₖ, norm(sₖ,2)
 	return (ρₖ,fₖ₊₁)
 end
