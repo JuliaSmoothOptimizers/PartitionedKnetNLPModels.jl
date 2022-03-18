@@ -117,7 +117,8 @@ function TR_CG_ANLP_LO(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 			x .= x + sₖ
 			epv_from_epv!(nlp.epv_work, nlp.epv_g)
 			NLPModels.grad!(nlp, x, gₖ)
-			add_epv!(nlp.epv_g, minus_epv!(nlp.epv_work)) # compute epv_y
+			minus_epv!(nlp.epv_work)
+			add_epv!(nlp.epv_g, nlp.epv_work) # compute epv_y
 			PLBFGS_update!(nlp.eplom_B, nlp.epv_work, s)
 			fₖ = fₖ₊₁
 			@printf "✅\n"
