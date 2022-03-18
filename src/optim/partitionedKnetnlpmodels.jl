@@ -71,3 +71,13 @@ end
 
 	partitioned_gradient!(pknetnlp :: PartitionedKnetNLPModel) = partitioned_gradient!(pknetnlp.chain, pknetnlp.current_minibatch_training, pknetnlp.table_indices, pknetnlp.epv_g)
 
+	function mul_prod!(res:: Vector{T}, pknetnlp :: PartitionedKnetNLPModel{T,S,P}, v :: Vector{T}) where {T<:Number, S, P}
+		eplom_B = pknetnlp.eplom_B
+		epv_work = pknetnlp.epv_work
+		PartitionedStructures.epv_from_v!(epv_work, v)
+		epv_res = similar(epv_work)
+		PartitionedStructures.mul_epm_epv!(epv_res, eplom_B, epv_work)
+		PartitionedStructures.build_v!(epv_res)
+		res .= PartitionedStructures.get_v(epv_res)
+	end 
+	

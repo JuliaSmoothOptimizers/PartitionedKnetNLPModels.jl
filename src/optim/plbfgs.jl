@@ -2,20 +2,19 @@ using LinearOperators, NLPModels, LinearAlgebra, LinearAlgebra.BLAS, Krylov
 using Printf, SolverTools, SolverCore
 
 
-mapnan(v::AbstractVector) = mapreduce((vi-> isnan(vi)), |, v)
 
-LBFGS(nlp :: AbstractNLPModel; kwargs...) = Generic_LBFGS(nlp;kwargs...)
-LBFGS(nlp :: KnetNLPModel; kwargs...) = Generic_LBFGS(nlp; is_KnetNLPModel=true, kwargs...)
-function Generic_LBFGS(nlp :: AbstractNLPModel;
+PLBFGS(nlp :: PartitionedKnetNLPModel; kwargs...) = Generic_PLBFGS(nlp; is_KnetNLPModel=true, kwargs...)
+function Generic_PLBFGS(nlp :: AbstractNLPModel;
 	x::AbstractVector=copy(nlp.meta.x0),
 	T::DataType = eltype(x),
 	kwargs...)
-	B = LBFGSOperator(T,nlp.meta.nvar, scaling=true) #:: LBFGSOperator{T} #scaling=true
-	println("LBFGSOperator{$T} ✅")
-	return Generic_LBFGS(nlp, B; x=x, kwargs...)
+	n = nlp.meta.nvar
+	B(nlp) = LinearOperator(T, n, n, true, true, (res, v)-> mul_prod!(res, nlp, v))
+	println("LinearOperator{$T} ✅")
+	return Generic_PLBFGS(nlp, B(nlp); x=x, kwargs...)
 end
 
-function Generic_LBFGS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
+function Generic_PLBFGS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	max_eval :: Int=10000,
 	max_iter::Int=10000,
 	start_time::Float64=time(),
@@ -88,7 +87,6 @@ function TR_CG_ANLP_LO(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	gₖ = Vector{T}(undef,n); gₖ = ∇f₀
 	gₜₘₚ = similar(gₖ)
 	∇fNorm2 = nrm2(n, ∇f₀)
-	Δₘₐₓ = Δ * ϕ^4
 
 	fₖ = NLPModels.obj(nlp, x)
 	
@@ -113,26 +111,23 @@ function TR_CG_ANLP_LO(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 		sₖ = cg_res[1]  # result of the linear system solved by Krylov.cg
 
 
-		if iszero(sₖ) # numerical unstability of LBFGS
-			B = LBFGSOperator(T,nlp.meta.nvar, scaling=true)
-			Δ = min(Δₘₐₓ,1/ϕ*Δ)
-			@printf "norm(s= £8.1e❌❌\n" nrm2(sₖ)
-		else # usual case 
-			(ρₖ, fₖ₊₁) = compute_ratio(x, fₖ, sₖ, nlp, B, gₖ) # we compute the ratio
-			# step acceptance + update f,g
-			if ρₖ > η
-				x .= x + sₖ; gₜₘₚ .= gₖ
-				NLPModels.grad!(nlp, x, gₖ); fₖ = fₖ₊₁
-				yₖ = gₖ - gₜₘₚ; push!(B, sₖ, yₖ)
-				@printf "✅\n"
-			else
-				@printf "❌\n"
-			end				
-			# now we update ∆
-			Δₘₐₓ = Δₘₐₓ*δ
-			(ρₖ >= η₁ && norm(sₖ, 2) > 0.8*Δ) ? Δ = min(Δₘₐₓ,ϕ*Δ) : Δ = min(Δₘₐₓ,Δ)
-			(ρₖ <= η) && (Δ = min(Δₘₐₓ,1/ϕ*Δ))
-		end 
+		(ρₖ, fₖ₊₁) = compute_ratio(x, fₖ, sₖ, nlp, B, gₖ) # we compute the ratio
+		# step acceptance + update f,g
+		if ρₖ > η
+			x .= x + sₖ
+			epv_from_epv!(nlp.epv_work, nlp.epv_g)
+			NLPModels.grad!(nlp, x, gₖ)
+			add_epv!(nlp.epv_g, minus_epv!(nlp.epv_work)) # compute epv_y
+			PLBFGS_update!(nlp.eplom_B, nlp.epv_work, s)
+			fₖ = fₖ₊₁
+			@printf "✅\n"
+		else
+			@printf "❌\n"
+		end				
+		# now we update ∆
+		Δₘₐₓ = Δₘₐₓ*δ
+		(ρₖ >= η₁ && norm(sₖ, 2) > 0.8*Δ) ? Δ = min(Δₘₐₓ,ϕ*Δ) : Δ = min(Δₘₐₓ,Δ)
+		(ρₖ <= η) && (Δ = min(Δₘₐₓ,1/ϕ*Δ))
 		
 		# on change le minibatch
 		is_KnetNLPModel && reset_minibatch_train!(nlp)
@@ -152,3 +147,10 @@ function compute_ratio(x::AbstractVector{T}, fₖ::T, sₖ::Vector{T}, nlp::Abst
 	isnan(ρₖ) && @show mₖ₊₁, fₖ₊₁, fₖ, norm(sₖ,2)
 	return (ρₖ,fₖ₊₁)
 end
+
+
+	
+
+epv_tmp = nlp.epv_g
+epv_g = partitioned_gradient()
+add_epv!(epvg, minus_epv!(epv_tmp)) # compute epv_y
