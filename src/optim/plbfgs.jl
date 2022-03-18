@@ -127,8 +127,8 @@ function TR_CG_ANLP_LO(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 		end				
 		# now we update ∆
 		Δₘₐₓ = Δₘₐₓ*δ
-		(ρₖ >= η₁ && norm(sₖ, 2) > 0.8*Δ) ? Δ = min(Δₘₐₓ,ϕ*Δ) : Δ = min(Δₘₐₓ,Δ)
-		(ρₖ <= η) && (Δ = min(Δₘₐₓ,1/ϕ*Δ))
+		(ρₖ >= η₁ && norm(sₖ, 2) > 0.8*Δ) ? Δ = ϕ*Δ : Δ = Δ
+		(ρₖ <= η) && Δ = ϕ*Δ
 		
 		# on change le minibatch
 		is_KnetNLPModel && reset_minibatch_train!(nlp)
