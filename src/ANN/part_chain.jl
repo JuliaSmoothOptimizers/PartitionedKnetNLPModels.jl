@@ -85,7 +85,6 @@ function partitioned_gradient!(chain :: PartChainPSLDP, data_xy, table_indices :
 	vars = Knet.params(chain)		
 	C = size(table_indices)[1]
 	tmp = similar(vars)
-	@show typeof(data_xy)
 	count = 0 
 	for i in 1:C
 		for j in 1:C

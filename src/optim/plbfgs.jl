@@ -90,6 +90,13 @@ function TR_CG_ANLP_LO(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	∇fNorm2 = nrm2(n, ∇f₀)
 
 	fₖ = NLPModels.obj(nlp, x)
+	xone = ones(T, n)
+	Bxone = similar(xone)
+	res = similar(xone)
+	
+	Bxone = B * xone
+	mul_prod!(res, nlp, xone)
+	println("norm B*ones", nrm2(n, Bxone), "norm eplom_B*ones", nrm2(n, res))
 	
 	@printf "iter temps fₖ norm(gₖ,2) Δ ρₖ\n" 
 
@@ -107,6 +114,10 @@ function TR_CG_ANLP_LO(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 		mod(iter,1) == 0 && @printf "\tCurrent accuracy: %8.3e " accuracy(nlp)
 
 		iter += 1
+	
+		Bxone .= B * xone
+		mul_prod!(res, nlp, xone)
+		println("iter ", i, "norm B*ones", nrm2(n, Bxone), "norm eplom_B*ones", nrm2(n, res))
 		
 		cg_res = Krylov.cg(B, - gₖ, atol=T(atol), rtol=cgtol, radius = T(Δ), itmax=max(2 * n, 50))
 		sₖ .= cg_res[1]  # result of the linear system solved by Krylov.cg
