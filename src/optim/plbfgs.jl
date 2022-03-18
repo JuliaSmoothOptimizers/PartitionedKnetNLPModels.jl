@@ -91,7 +91,7 @@ function TR_CG_ANLP_LO(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 
 	fₖ = NLPModels.obj(nlp, x)
 	
-	@printf "iter temps fₖ norm(gₖ,2) Δ Δₘₐₓ ρₖ\n" 
+	@printf "iter temps fₖ norm(gₖ,2) Δ ρₖ\n" 
 
 	cgtol = one(T)  # Must be ≤ 1.
 	cgtol = max(rtol, min(T(0.1), 9 * cgtol / 10, sqrt(∇fNorm2)))
@@ -104,13 +104,12 @@ function TR_CG_ANLP_LO(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	_max_time(start_time) = (time() - start_time) < max_time
 	while absolute(n,gₖ,ϵ) && relative(n,gₖ,ϵ,∇fNorm2) && _max_iter(iter, max_iter) & _max_time(start_time) && isnan(ρₖ)==false# stop condition
 		@printf "%3d %4g %8.1e %7.1e %7.1e %7.1e " iter (time() - start_time) fₖ norm(gₖ,2) Δ  ρₖ
-		mod(iter,5) == 0 && @printf "\tCurrent accuracy: %8.3e " accuracy(nlp)
+		mod(iter,1) == 0 && @printf "\tCurrent accuracy: %8.3e " accuracy(nlp)
 
 		iter += 1
 		
 		cg_res = Krylov.cg(B, - gₖ, atol=T(atol), rtol=cgtol, radius = T(Δ), itmax=max(2 * n, 50))
 		sₖ .= cg_res[1]  # result of the linear system solved by Krylov.cg
-		@show typeof(sₖ), typeof(gₖ)
 		(ρₖ, fₖ₊₁) = compute_ratio(x, fₖ, sₖ, nlp, B, gₖ) # we compute the ratio
 		# step acceptance + update f,g
 		if ρₖ > η
@@ -127,7 +126,7 @@ function TR_CG_ANLP_LO(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 		end				
 		# now we update ∆
 		(ρₖ >= η₁) && ((norm(sₖ, 2) > 0.8*Δ) ? Δ = ϕ*Δ : Δ = Δ)
-		(ρₖ <= η) && (Δ = ϕ*Δ)
+		(ρₖ <= η) && (Δ = (1/ϕ)*Δ)
 		
 		# on change le minibatch
 		is_KnetNLPModel && reset_minibatch_train!(nlp)
@@ -143,10 +142,8 @@ end
 function compute_ratio(x::Vector{T}, fₖ::T, sₖ::Vector{T}, nlp::AbstractNLPModel, B::AbstractLinearOperator{T}, gₖ::AbstractVector{T}) where T <: Number
 	mₖ₊₁ =  fₖ + dot(gₖ,sₖ) + 1/2 * (dot((B*sₖ),sₖ))
 	xₖ₊₁ = x+sₖ
-	@show size(x), size(sₖ), size(xₖ₊₁)
 	fₖ₊₁ = NLPModels.obj(nlp, xₖ₊₁)
 	ρₖ = (fₖ - fₖ₊₁)/(fₖ - mₖ₊₁)
-	# isnan(ρₖ) && @show mₖ₊₁, fₖ₊₁, fₖ, norm(sₖ,2)
 	return (ρₖ,fₖ₊₁)
 end
 
