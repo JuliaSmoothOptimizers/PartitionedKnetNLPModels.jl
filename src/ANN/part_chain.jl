@@ -6,7 +6,6 @@ struct PartChainPSLDP <: PartitionedChain
 	PartChainPSLDP(layers...) = new(layers)
 end
 (c :: PartChainPSLDP)(x) = (for l in c.layers; x = l(x); end; x)
-# (c :: PartChainPSLDP)(x) = (for l in c.layers; x = l(x; p=0.); end; x)
 # fonction partitionnée
 (c :: PartChainPSLDP)(d :: Knet.Data) = PartPSLDP(c; data=d, average=true)
 (c :: PartChainPSLDP)(data :: Tuple{T1,T2}) where {T1,T2} = _PartPSLDP(c; data=data, average=true)
@@ -54,9 +53,8 @@ function build_listes_indices(ps_scores :: Vector{Vector{Int}})
 end 
 
 
-function partitioned_gradient(chain :: PartChainPSLDP, data_xy, table_indices :: Matrix{Vector{Int}}; type=Float32)
-	vars = Knet.params(chain)	
-	n = chain.n
+function partitioned_gradient(chain :: PartChainPSLDP, data_xy, table_indices :: Matrix{Vector{Int}}; type=Float32, n::Int=length(vcat_arrays_vector(vars)))
+	vars = Knet.params(chain)		
 	C = size(table_indices)[1]
 	vector_grad_elt = Vector{Elemental_elt_vec{type}}(undef,0)
 	tmp = similar(vars)
@@ -82,8 +80,7 @@ end
 
 
 function partitioned_gradient!(chain :: PartChainPSLDP, data_xy, table_indices :: Matrix{Vector{Int}}, epv_grad :: Elemental_pv{T}) where T <: Number
-	vars = Knet.params(chain)	
-	n = chain.n
+	vars = Knet.params(chain)		
 	C = size(table_indices)[1]
 	tmp = similar(vars)
 	count = 0 

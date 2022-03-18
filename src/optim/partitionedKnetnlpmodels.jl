@@ -49,7 +49,7 @@ end
     layers_g = similar(params(chain_ANN)) # create a Vector of layer variables
 
 		table_indices = build_listes_indices(chain_ANN)
-		epv_g = partitioned_gradient(chain_ANN, current_minibatch_training, table_indices)
+		epv_g = partitioned_gradient(chain_ANN, current_minibatch_training, table_indices; n=n)
 		epv_s = similar(epv_g)
 		epv_work = similar(epv_g)
 		eplom_B = eplom_lbfgs_from_epv(epv_g)
