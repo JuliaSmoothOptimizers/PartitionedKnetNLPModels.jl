@@ -135,7 +135,7 @@ function TR_CG_ANLP_LO(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 		# periodic printer
 	end
 	@printf "%3d %4g %8.1e %7.1e %7.1e %7.1e\n" iter (time() - start_time) fₖ norm(gₖ,2) Δ ρₖ
-	@printf "Current accuracy: %8.1e \% " accuracy(nlp)
+	@printf "Current accuracy: %8.1e/100 " accuracy(nlp)
 
 	return (x, iter)
 end
