@@ -6,6 +6,8 @@ struct PartChainPSLDP <: PartitionedChain
 	PartChainPSLDP(layers...) = new(layers)
 end
 (c :: PartChainPSLDP)(x) = (for l in c.layers; x = l(x); end; x)
+(c :: PartitionedKnetNLPModels.PartChainPSLDP)(x) = (for (i,l) in enumerate(c.layers); println(i); x = l(x); end; x)
+
 # fonction partitionnée
 (c :: PartChainPSLDP)(d :: Knet.Data) = PartPSLDP(c; data=d, average=true)
 (c :: PartChainPSLDP)(data :: Tuple{T1,T2}) where {T1,T2} = _PartPSLDP(c; data=data, average=true)
@@ -83,6 +85,7 @@ function partitioned_gradient!(chain :: PartChainPSLDP, data_xy, table_indices :
 	vars = Knet.params(chain)		
 	C = size(table_indices)[1]
 	tmp = similar(vars)
+	@show typeof(data_xy)
 	count = 0 
 	for i in 1:C
 		for j in 1:C

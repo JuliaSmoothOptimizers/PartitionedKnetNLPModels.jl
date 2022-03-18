@@ -142,8 +142,9 @@ end
 
 function compute_ratio(x::Vector{T}, fₖ::T, sₖ::Vector{T}, nlp::AbstractNLPModel, B::AbstractLinearOperator{T}, gₖ::AbstractVector{T}) where T <: Number
 	mₖ₊₁ =  fₖ + dot(gₖ,sₖ) + 1/2 * (dot((B*sₖ),sₖ))
-	@show size(x), size(sₖ)
-	fₖ₊₁ = NLPModels.obj(nlp, x+sₖ)
+	xₖ₊₁ = x+sₖ
+	@show size(x), size(sₖ), size(xₖ₊₁)
+	fₖ₊₁ = NLPModels.obj(nlp, xₖ₊₁)
 	ρₖ = (fₖ - fₖ₊₁)/(fₖ - mₖ₊₁)
 	# isnan(ρₖ) && @show mₖ₊₁, fₖ₊₁, fₖ, norm(sₖ,2)
 	return (ρₖ,fₖ₊₁)
