@@ -144,13 +144,6 @@ function compute_ratio(x::AbstractVector{T}, fₖ::T, sₖ::Vector{T}, nlp::Abst
 	mₖ₊₁ =  fₖ + dot(gₖ,sₖ) + 1/2 * (dot((B*sₖ),sₖ))
 	fₖ₊₁ = NLPModels.obj(nlp, x+sₖ)
 	ρₖ = (fₖ - fₖ₊₁)/(fₖ - mₖ₊₁)
-	isnan(ρₖ) && @show mₖ₊₁, fₖ₊₁, fₖ, norm(sₖ,2)
+	# isnan(ρₖ) && @show mₖ₊₁, fₖ₊₁, fₖ, norm(sₖ,2)
 	return (ρₖ,fₖ₊₁)
 end
-
-
-	
-
-epv_tmp = nlp.epv_g
-epv_g = partitioned_gradient()
-add_epv!(epvg, minus_epv!(epv_tmp)) # compute epv_y
