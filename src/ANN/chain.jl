@@ -70,6 +70,7 @@ mutable struct Chain_PSLDP <: KnetNLPModels.Chain
 end
 (c::Chain_PSLDP)(x) = (for l in c.layers; x = l(x); end; x)
 (c::Chain_PSLDP)(x,y) = PSLDP(c(x),y)
+(c :: Chain_PSLDP)(data :: Tuple{T1,T2}) where {T1,T2} = _PSLDP(c; data=data, average=true)
 (c::Chain_PSLDP)(d::Knet.Data) = PSLDP(c; data=d, average=true)
 function PSLDP(model; data, dims=1, average=true, o...)	
 	sum = cnt = 0
@@ -77,6 +78,13 @@ function PSLDP(model; data, dims=1, average=true, o...)
 		(z,n) = PSLDP(model(x; o...), y; dims=dims, average=false) 
 		sum += z; cnt += n
 	end
+	average ? sum / cnt : (sum, cnt)
+end
+function _PSLDP(model; data, dims=1, average=true, o...)	
+	sum = cnt = 0
+	(x,y) = data
+	(z,n) = PSLDP(model(x; o...), y; dims=dims, average=false) 
+	sum += z; cnt += n
 	average ? sum / cnt : (sum, cnt)
 end
 function PSLDP(scores,labels::AbstractArray{<:Integer}; dims=1, average=true)

@@ -26,7 +26,7 @@ function Generic_LBFGS(nlp :: PartitionedKnetNLPModel, B :: AbstractLinearOperat
 	∇f₀ = NLPModels.grad(nlp, x₀)
 	∇fNorm2 = norm(∇f₀,2)
 
-	println("Début LBFGS TR CG")
+	println("Start trust-region LBFGS using truncated conjugate-gradient")
 	(x,iter) = TR_CG_ANLP_LBFGS(nlp, B; max_eval=max_eval, max_time=max_time, kwargs...)
 
 	Δt = time() - start_time
@@ -102,7 +102,6 @@ function TR_CG_ANLP_LBFGS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T
 	_max_time(start_time) = (time() - start_time) < max_time
 	while absolute(n,gₖ,ϵ) && relative(n,gₖ,ϵ,∇fNorm2) && _max_iter(iter, max_iter) & _max_time(start_time) && isnan(ρₖ)==false# stop condition
 		@printf "%3d %4g %8.1e %7.1e %7.1e %7.1e %8.3e" iter (time() - start_time) fₖ norm(gₖ,2) Δ  ρₖ accuracy(nlp)
-		mod(iter,5) == 0 && @printf "\tCurrent accuracy: %8.3e " accuracy(nlp)
 
 		iter += 1
 		
