@@ -136,7 +136,7 @@ end
 
 struct Sep_layer; vec_wi; vec_bi; N; f; gcdi; gcdo; in; out; p; end
 (psd::Sep_layer)(x) = mapreduce( (j -> psd.f.( psd.vec_wi[j]*mat(dropout(x,psd.p))[(psd.gcdi*(j-1)+1):(psd.gcdi*j),:] .+ (psd.vec_bi[j]) ) ), ((x,y)->vcat(x,y)), [1:psd.N;] )
-Sep_layer(i::Int,o::Int; N::Int=gcd(i,o),f=sigm,p=0.3) = Sep_layer( map((j->param(checkfloor(N,o,i)...)),[1:N;]), map((x->param0(checkfloor(N,o))),[1:N;]), N, f , checkfloor(N,i), checkfloor(N,o), checkfloor(N,i)*N, checkfloor(N,o)*N, p)
+Sep_layer(i::Int,o::Int; N::Int=gcd(i,o),f=sigm,p=0.) = Sep_layer( map((j->param(checkfloor(N,o,i)...)),[1:N;]), map((x->param0(checkfloor(N,o))),[1:N;]), N, f , checkfloor(N,i), checkfloor(N,o), checkfloor(N,i)*N, checkfloor(N,o)*N, p)
 SL(i::Int,N::Int,ni::Int; f=sigm) = Sep_layer(i,N*ni;N=N,f=f)
 ps_struct(psd::Sep_layer; index::Int=0) = PsSep(psd.in,psd.out; N=psd.N, index=index)
 

@@ -27,7 +27,7 @@ function Generic_PLBFGS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	∇f₀ = NLPModels.grad(nlp, x₀)
 	∇fNorm2 = norm(∇f₀,2)
 
-	println("Début LBFGS TR CG")
+	println("Start trust-region PLBFGS using truncated conjugate-gradient")
 	(x,iter) = TR_CG_ANLP_LO(nlp, B; max_eval=max_eval, max_time=max_time, kwargs...)
 
 	Δt = time() - start_time
@@ -63,7 +63,7 @@ end
 
 
 function TR_CG_ANLP_LO(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
-	x::AbstractVector=copy(nlp.meta.x0),
+	x::AbstractVector{T}=copy(nlp.meta.x0),
 	n::Int=nlp.meta.nvar,
 	max_eval::Int=10000,
 	max_iter::Int=10000,
@@ -86,6 +86,7 @@ function TR_CG_ANLP_LO(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	iter = 0 # ≈ k
 	gₖ = Vector{T}(undef,n); gₖ = ∇f₀
 	gₜₘₚ = similar(gₖ)
+	sₖ = similar(gₖ)
 	∇fNorm2 = nrm2(n, ∇f₀)
 
 	fₖ = NLPModels.obj(nlp, x)
@@ -108,13 +109,12 @@ function TR_CG_ANLP_LO(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 		iter += 1
 		
 		cg_res = Krylov.cg(B, - gₖ, atol=T(atol), rtol=cgtol, radius = T(Δ), itmax=max(2 * n, 50))
-		sₖ = cg_res[1]  # result of the linear system solved by Krylov.cg
-
-
+		sₖ .= cg_res[1]  # result of the linear system solved by Krylov.cg
+		@show typeof(sₖ), typeof(gₖ)
 		(ρₖ, fₖ₊₁) = compute_ratio(x, fₖ, sₖ, nlp, B, gₖ) # we compute the ratio
 		# step acceptance + update f,g
 		if ρₖ > η
-			x .= x + sₖ
+			x .= x .+ sₖ
 			epv_from_epv!(nlp.epv_work, nlp.epv_g)
 			NLPModels.grad!(nlp, x, gₖ)
 			minus_epv!(nlp.epv_work)
@@ -140,10 +140,13 @@ function TR_CG_ANLP_LO(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	return (x, iter)
 end
 
-function compute_ratio(x::AbstractVector{T}, fₖ::T, sₖ::Vector{T}, nlp::AbstractNLPModel, B::AbstractLinearOperator{T}, gₖ::AbstractVector{T}) where T <: Number
+function compute_ratio(x::Vector{T}, fₖ::T, sₖ::Vector{T}, nlp::AbstractNLPModel, B::AbstractLinearOperator{T}, gₖ::AbstractVector{T}) where T <: Number
 	mₖ₊₁ =  fₖ + dot(gₖ,sₖ) + 1/2 * (dot((B*sₖ),sₖ))
+	@show size(x), size(sₖ)
 	fₖ₊₁ = NLPModels.obj(nlp, x+sₖ)
 	ρₖ = (fₖ - fₖ₊₁)/(fₖ - mₖ₊₁)
 	# isnan(ρₖ) && @show mₖ₊₁, fₖ₊₁, fₖ, norm(sₖ,2)
 	return (ρₖ,fₖ₊₁)
 end
+
+# regarder l'évolution du calcul du gradient
