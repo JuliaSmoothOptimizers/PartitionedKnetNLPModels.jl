@@ -3,17 +3,18 @@ using Printf, SolverTools, SolverCore
 
 
 
-LBFGS(nlp :: PartitionedKnetNLPModel; kwargs...) = Generic_LBFGS(nlp; is_KnetNLPModel=true, kwargs...)
-function Generic_LBFGS(nlp :: AbstractNLPModel;
+PLSR1(nlp :: PartitionedKnetNLPModel; kwargs...) = Generic_PLSR1(nlp; is_KnetNLPModel=true, kwargs...)
+function Generic_PLSR1(nlp :: AbstractNLPModel;
 	x::AbstractVector=copy(nlp.meta.x0),
 	T::DataType = eltype(x),
 	kwargs...)
-	B = LBFGSOperator(T,nlp.meta.nvar, scaling=true) #:: LBFGSOperator{T} #scaling=true
-	println("LBFGSOperator{$T} ✅")
-	return Generic_LBFGS(nlp, B; x=x, kwargs...)
+	n = nlp.meta.nvar
+	B(nlp) = LinearOperator(T, n, n, true, true, (res, v)-> mul_prod!(res, nlp, v))
+	println("LinearOperator{$T} ✅")
+	return Generic_PLSR1(nlp, B(nlp); x=x, kwargs...)
 end
 
-function Generic_LBFGS(nlp :: PartitionedKnetNLPModel, B :: AbstractLinearOperator{T};
+function Generic_PLSR1(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	max_eval :: Int=10000,
 	max_iter::Int=10000,
 	start_time::Float64=time(),
@@ -26,8 +27,8 @@ function Generic_LBFGS(nlp :: PartitionedKnetNLPModel, B :: AbstractLinearOperat
 	∇f₀ = NLPModels.grad(nlp, x₀)
 	∇fNorm2 = norm(∇f₀,2)
 
-	println("Start trust-region LBFGS using truncated conjugate-gradient")
-	(x,iter) = TR_CG_ANLP_LBFGS(nlp, B; max_eval=max_eval, max_time=max_time, kwargs...)
+	println("Start trust-region PLSR1 using truncated conjugate-gradient")
+	(x,iter) = TR_CG_ANLP_PLSR1(nlp, B; max_eval=max_eval, max_time=max_time, kwargs...)
 
 	Δt = time() - start_time
 	g = NLPModels.grad(nlp, x)
@@ -61,8 +62,8 @@ function Generic_LBFGS(nlp :: PartitionedKnetNLPModel, B :: AbstractLinearOperat
 end
 
 
-function TR_CG_ANLP_LBFGS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
-	x::AbstractVector=copy(nlp.meta.x0),
+function TR_CG_ANLP_PLSR1(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
+	x::AbstractVector{T}=copy(nlp.meta.x0),
 	n::Int=nlp.meta.nvar,
 	max_eval::Int=10000,
 	max_iter::Int=10000,
@@ -83,14 +84,20 @@ function TR_CG_ANLP_LBFGS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T
 	) where T <: Number
 
 	iter = 0 # ≈ k
-	gₖ = similar(x0)
-	gₖ .= ∇f₀
+	gₖ = Vector{T}(undef,n); gₖ = ∇f₀
 	gₜₘₚ = similar(gₖ)
-	yₖ = similar(gₖ)
+	sₖ = similar(gₖ)
 	∇fNorm2 = nrm2(n, ∇f₀)
 
 	fₖ = NLPModels.obj(nlp, x)
+	# xone = ones(T, n)
+	# Bxone = similar(xone)
+	# res = similar(xone)
 	
+	# Bxone = B * xone
+	# mul_prod!(res, nlp, xone)
+	# println("iter : ", iter, ", norm B*ones : ", nrm2(n, Bxone), ", norm eplom_B*ones : ", nrm2(n, res))
+
 	@printf "iter temps fₖ norm(gₖ,2) Δ ρₖ accuracy\n" 
 
 	cgtol = one(T)  # Must be ≤ 1.
@@ -106,23 +113,25 @@ function TR_CG_ANLP_LBFGS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T
 		@printf "%3d %4g %8.1e %7.1e %7.1e %7.1e %8.3e" iter (time() - start_time) fₖ norm(gₖ,2) Δ  ρₖ accuracy(nlp)
 
 		iter += 1
-		
+	
 		cg_res = Krylov.cg(B, - gₖ, atol=T(atol), rtol=cgtol, radius = T(Δ), itmax=max(2 * n, 50))
-		sₖ = cg_res[1]  # result of the linear system solved by Krylov.cg
-
-
+		sₖ .= cg_res[1]  # result of the linear system solved by Krylov.cg
 		(ρₖ, fₖ₊₁) = compute_ratio(x, fₖ, sₖ, nlp, B, gₖ) # we compute the ratio
 		# step acceptance + update f,g
 		if ρₖ > η
-			x .= x .+ sₖ; gₜₘₚ .= gₖ
-			NLPModels.grad!(nlp, x, gₖ); fₖ = fₖ₊₁
-			yₖ .= gₖ .- gₜₘₚ; push!(B, sₖ, yₖ)
+			x .= x .+ sₖ
+			epv_from_epv!(nlp.epv_work, nlp.epv_g)
+			NLPModels.grad!(nlp, x, gₖ)
+			minus_epv!(nlp.epv_work)
+			add_epv!(nlp.epv_g, nlp.epv_work) # compute epv_y
+			PLSR1_update!(nlp.eplom_B, nlp.epv_work, sₖ)
+			fₖ = fₖ₊₁
 			@printf "✅\n"
 		else
 			@printf "❌\n"
 		end				
 		# now we update ∆
-		(ρₖ >= η₁) && ((nrm2(n,sₖ) > 0.8*Δ) ? Δ = ϕ*Δ : Δ = Δ)
+		(ρₖ >= η₁) && ((norm(sₖ, 2) > 0.8*Δ) ? Δ = ϕ*Δ : Δ = Δ)
 		(ρₖ <= η) && (Δ = (1/ϕ)*Δ)
 		
 		# on change le minibatch
@@ -136,9 +145,12 @@ function TR_CG_ANLP_LBFGS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T
 	return (x, iter)
 end
 
-function compute_ratio(x::AbstractVector{T}, fₖ::T, sₖ::Vector{T}, nlp::AbstractNLPModel, B::AbstractLinearOperator{T}, gₖ::AbstractVector{T}) where T <: Number
+function compute_ratio(x::Vector{T}, fₖ::T, sₖ::Vector{T}, nlp::AbstractNLPModel, B::AbstractLinearOperator{T}, gₖ::AbstractVector{T}) where T <: Number
 	mₖ₊₁ =  fₖ + dot(gₖ,sₖ) + 1/2 * (dot((B*sₖ),sₖ))
-	fₖ₊₁ = NLPModels.obj(nlp, x+sₖ)
+	xₖ₊₁ = x+sₖ
+	fₖ₊₁ = NLPModels.obj(nlp, xₖ₊₁)
 	ρₖ = (fₖ - fₖ₊₁)/(fₖ - mₖ₊₁)
 	return (ρₖ,fₖ₊₁)
 end
+
+# regarder l'évolution du calcul du gradient

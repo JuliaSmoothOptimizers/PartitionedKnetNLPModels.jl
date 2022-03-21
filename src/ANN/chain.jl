@@ -70,7 +70,7 @@ mutable struct Chain_PSLDP <: KnetNLPModels.Chain
 end
 (c::Chain_PSLDP)(x) = (for l in c.layers; x = l(x); end; x)
 (c::Chain_PSLDP)(x,y) = PSLDP(c(x),y)
-(c :: Chain_PSLDP)(data :: Tuple{T1,T2}) where {T1,T2} = _PSLDP(c; data=data, average=true)
+(c::Chain_PSLDP)(data :: Tuple{T1,T2}) where {T1,T2} = _PSLDP(c; data=data, average=true)
 (c::Chain_PSLDP)(d::Knet.Data) = PSLDP(c; data=d, average=true)
 function PSLDP(model; data, dims=1, average=true, o...)	
 	sum = cnt = 0
@@ -89,7 +89,7 @@ function _PSLDP(model; data, dims=1, average=true, o...)
 end
 function PSLDP(scores,labels::AbstractArray{<:Integer}; dims=1, average=true)
 	indices = findindices(scores,labels,dims=dims)
-	scores = exp.(scores .- reshape(scores[indices],1,length(indices))) # diminue par les scores par celui que l'on cherche à obtenir
+	scores = exp.(scores .- reshape(scores[indices],1, length(indices))) # diminue par les scores par celui que l'on cherche à obtenir
 	# absence de garantie < 1
 	acc = sum(scores)
 	average ? (acc / length(labels)) : (acc, length(labels))
