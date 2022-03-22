@@ -1,6 +1,6 @@
 using CUDA, Knet, KnetNLPModels, MLDatasets, NLPModels
 
-mutable struct PartitionedKnetNLPModel{T, S, C <: PartitionedChain} <: AbstractKnetNLPModel{T, S}
+mutable struct PartitionedKnetNLPModel{T <: Number, S, C <: PartitionedChain, Y <: Part_mat{T}} <: AbstractKnetNLPModel{T, S}
 	meta :: NLPModelMeta{T, S}
 	n :: Int
 	C :: Int
@@ -19,13 +19,16 @@ mutable struct PartitionedKnetNLPModel{T, S, C <: PartitionedChain} <: AbstractK
 	epv_g :: Elemental_pv{T}
 	epv_s :: Elemental_pv{T}
 	epv_work :: Elemental_pv{T}
-	eplom_B :: Elemental_plom_bfgs{T}
+	epv_res :: Elemental_pv{T}
+	eplom_B :: Y
 	table_indices :: Matrix{Vector{Int}} # choix arbitraire, à changer peut-être dans le futur
+	name :: Symbol
 end
 
 
  function PartitionedKnetNLPModel(chain_ANN :: P;
             size_minibatch :: Int=100,
+						name=:plbfgs,
             data_train = begin (xtrn, ytrn) = MNIST.traindata(Float32); ytrn[ytrn.==0] .= 10; (xtrn, ytrn) end,
             data_test = begin (xtst, ytst) = MNIST.testdata(Float32); ytst[ytst.==0] .= 10; (xtst, ytst) end
             ) where P <: PartitionedChain
@@ -52,9 +55,14 @@ end
 		epv_g = partitioned_gradient(chain_ANN, current_minibatch_training, table_indices; n=n)
 		epv_s = similar(epv_g)
 		epv_work = similar(epv_g)
-		eplom_B = eplom_lbfgs_from_epv(epv_g)
-		
-    return PartitionedKnetNLPModel{T, Vector{T}, P}(meta, n, C, chain_ANN, Counters(), data_train, data_test, size_minibatch, minibatch_train, minibatch_test, current_minibatch_training, current_minibatch_testing, w0, layers_g, nested_array, epv_g, epv_s, epv_work, eplom_B, table_indices)
+		epv_res = similar(epv_g)
+		(name==:plbfgs) && (eplom_B = eplom_lbfgs_from_epv(epv_g))
+		(name==:plsr1) && (eplom_B = eplom_lbfgs_from_epv(epv_g))
+		(name==:pbfgs) && (eplom_B = identity_epm(epv_g))
+		(name==:psr1) && (eplom_B = identity_epm(epv_g))
+		PLSR1_update!
+
+    return PartitionedKnetNLPModel{T, Vector{T}, P}(meta, n, C, chain_ANN, Counters(), data_train, data_test, size_minibatch, minibatch_train, minibatch_test, current_minibatch_training, current_minibatch_testing, w0, layers_g, nested_array, epv_g, epv_s, epv_work, epv_res, eplom_B, table_indices, name)
   end
 
 	"""
@@ -75,7 +83,7 @@ end
 		eplom_B = pknetnlp.eplom_B
 		epv_work = pknetnlp.epv_work
 		PartitionedStructures.epv_from_v!(epv_work, v)
-		epv_res = similar(epv_work)
+		epv_res = pknetnlp.epv_res
 		PartitionedStructures.mul_epm_epv!(epv_res, eplom_B, epv_work)
 		PartitionedStructures.build_v!(epv_res)
 		res .= PartitionedStructures.get_v(epv_res)
