@@ -59,9 +59,9 @@ end
 		(name==:plbfgs) && (eplom_B = eplom_lbfgs_from_epv(epv_g; T=T))
 		(name==:plsr1) && (eplom_B = eplom_lbfgs_from_epv(epv_g; T=T))
 		(name==:plse) && (eplom_B = eplom_lose_from_epv(epv_g; T=T))
-		(name==:pbfgs) && (eplom_B = identity_epm(epv_g; T=T))
-		(name==:psr1) && (eplom_B = identity_epm(epv_g; T=T))
-		(name==:pse) && (eplom_B = identity_epm(epv_g; T=T))
+		(name==:pbfgs) && (eplom_B = epm_from_epv(epv_g; T=T))
+		(name==:psr1) && (eplom_B = epm_from_epv(epv_g; T=T))
+		(name==:pse) && (eplom_B = epm_from_epv(epv_g; T=T))
 		Y = typeof(emplom_B)
 		
     return PartitionedKnetNLPModel{T, Vector{T}, P, Y}(meta, n, C, chain_ANN, Counters(), data_train, data_test, size_minibatch, minibatch_train, minibatch_test, current_minibatch_training, current_minibatch_testing, w0, layers_g, nested_array, epv_g, epv_s, epv_work, epv_res, eplom_B, table_indices, name)
