@@ -2,7 +2,6 @@ using LinearOperators, NLPModels, LinearAlgebra, LinearAlgebra.BLAS, Krylov
 using Printf, SolverTools, SolverCore
 
 
-
 PUS(nlp :: PartitionedKnetNLPModel; kwargs...) = partitioned_update_solver(nlp; is_KnetNLPModel=true, kwargs...)
 function partitioned_update_solver(nlp :: AbstractNLPModel;
 	x::AbstractVector=copy(nlp.meta.x0),
@@ -10,8 +9,8 @@ function partitioned_update_solver(nlp :: AbstractNLPModel;
 	kwargs...)
 	n = nlp.meta.nvar
 	B(nlp) = LinearOperator(T, n, n, true, true, (res, v)-> mul_prod!(res, nlp, v))
-	type_update = nlp.
-	println("LinearOperator{$T} ✅ from ")
+	type_update = nlp.name
+	println("LinearOperator{$T} ✅ from $type_update")
 	return partitioned_update_solver(nlp, B(nlp); x=x, kwargs...)
 end
 
@@ -29,7 +28,7 @@ function partitioned_update_solver(nlp :: AbstractNLPModel, B :: AbstractLinearO
 	∇fNorm2 = norm(∇f₀,2)
 
 	println("Start trust-region PLBFGS using truncated conjugate-gradient")
-	(x,iter) = TR_CG_ANLP_PLBFGS(nlp, B; max_eval=max_eval, max_time=max_time, kwargs...)
+	(x,iter) = TRCG_KNLP_PUS(nlp, B; max_eval=max_eval, max_time=max_time, kwargs...)
 
 	Δt = time() - start_time
 	g = NLPModels.grad(nlp, x)
@@ -63,7 +62,7 @@ function partitioned_update_solver(nlp :: AbstractNLPModel, B :: AbstractLinearO
 end
 
 
-function TR_CG_ANLP_PLBFGS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
+function TRCG_KNLP_PUS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	x::AbstractVector{T}=copy(nlp.meta.x0),
 	n::Int=nlp.meta.nvar,
 	max_eval::Int=10000,
@@ -126,7 +125,7 @@ function TR_CG_ANLP_PLBFGS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{
 			minus_epv!(nlp.epv_work)
 			add_epv!(nlp.epv_g, nlp.epv_work) # compute epv_y
 			epv_from_v!(nlp.epv_s, sₖ)
-			update!(nlp.eplom_B, nlp.epv_work, sₖ; name=nlp.name)
+			update!(nlp.eplom_B, nlp.epv_work, nlp.epv_s; name=nlp.name)
 			fₖ = fₖ₊₁
 			@printf "✅\n"
 		else
@@ -136,10 +135,9 @@ function TR_CG_ANLP_PLBFGS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{
 		(ρₖ >= η₁) && ((norm(sₖ, 2) > 0.8*Δ) ? Δ = ϕ*Δ : Δ = Δ)
 		(ρₖ <= η) && (Δ = (1/ϕ)*Δ)
 		
-		# on change le minibatch
+		# change the minibatch
 		is_KnetNLPModel && reset_minibatch_train!(nlp)
 		
-		# periodic printer
 	end
 	@printf "iter temps fₖ norm(gₖ,2) Δ ρₖ accuracy\n" 
 	@printf "%3d %4g %8.1e %7.1e %7.1e %7.1e %8.3e" iter (time() - start_time) fₖ norm(gₖ,2) Δ  ρₖ accuracy(nlp)

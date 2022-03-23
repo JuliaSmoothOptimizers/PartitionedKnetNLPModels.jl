@@ -31,7 +31,7 @@ end
 						name=:plbfgs,
             data_train = begin (xtrn, ytrn) = MNIST.traindata(Float32); ytrn[ytrn.==0] .= 10; (xtrn, ytrn) end,
             data_test = begin (xtst, ytst) = MNIST.testdata(Float32); ytst[ytst.==0] .= 10; (xtst, ytst) end
-            ) where P <: PartitionedChain
+            ) where P <: PartitionedChain{T, S, C, Y}
     w0 = vector_params(chain_ANN)
 		T = eltype(w0)
     n = length(w0)
@@ -56,11 +56,13 @@ end
 		epv_s = similar(epv_g)
 		epv_work = similar(epv_g)
 		epv_res = similar(epv_g)
-		(name==:plbfgs) && (eplom_B = eplom_lbfgs_from_epv(epv_g))
-		(name==:plsr1) && (eplom_B = eplom_lbfgs_from_epv(epv_g))
-		(name==:pbfgs) && (eplom_B = identity_epm(epv_g))
-		(name==:psr1) && (eplom_B = identity_epm(epv_g))
-		PLSR1_update!
+		(name==:plbfgs) && (eplom_B = eplom_lbfgs_from_epv(epv_g; T=T))
+		(name==:plsr1) && (eplom_B = eplom_lbfgs_from_epv(epv_g; T=T))
+		(name==:plse) && (eplom_B = eplom_lose_from_epv(epv_g; T=T))
+		(name==:pbfgs) && (eplom_B = identity_epm(epv_g; T=T))
+		(name==:psr1) && (eplom_B = identity_epm(epv_g; T=T))
+		(name==:pse) && (eplom_B = identity_epm(epv_g; T=T))
+
 
     return PartitionedKnetNLPModel{T, Vector{T}, P}(meta, n, C, chain_ANN, Counters(), data_train, data_test, size_minibatch, minibatch_train, minibatch_test, current_minibatch_training, current_minibatch_testing, w0, layers_g, nested_array, epv_g, epv_s, epv_work, epv_res, eplom_B, table_indices, name)
   end

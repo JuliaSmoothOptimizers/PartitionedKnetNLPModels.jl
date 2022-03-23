@@ -1,4 +1,5 @@
 module PartitionedKnetNLPModels
+	using Knet
 	using KnetNLPModels, PartitionedStructures
 
 	include("ANN/_include.jl")
