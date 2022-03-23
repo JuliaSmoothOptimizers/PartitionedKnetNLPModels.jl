@@ -125,7 +125,7 @@ function TRCG_KNLP_PUS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 			minus_epv!(nlp.epv_work)
 			add_epv!(nlp.epv_g, nlp.epv_work) # compute epv_y
 			epv_from_v!(nlp.epv_s, sₖ)
-			update!(nlp.eplom_B, nlp.epv_work, nlp.epv_s; name=nlp.name)
+			PartitionedStructures.update!(nlp.eplom_B, nlp.epv_work, nlp.epv_s; name=nlp.name)
 			fₖ = fₖ₊₁
 			@printf "✅\n"
 		else
