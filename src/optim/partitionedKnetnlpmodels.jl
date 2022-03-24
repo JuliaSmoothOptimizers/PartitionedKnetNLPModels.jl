@@ -78,7 +78,7 @@ function set_size_minibatch!(pknetnlp :: PartitionedKnetNLPModel, size_minibatch
 	pknetnlp.minibatch_test = create_minibatch(pknetnlp.data_test[1], pknetnlp.data_test[2], pknetnlp.size_minibatch)
 end
 
-partitioned_gradient!(pknetnlp :: PartitionedKnetNLPModel) = partitioned_gradient!(pknetnlp.chain, pknetnlp.current_minibatch_training, pknetnlp.table_indices, pknetnlp.epv_g)
+partitioned_gradient!(pknetnlp :: PartitionedKnetNLPModel; data=pknetnlp.current_minibatch_training) = partitioned_gradient!(pknetnlp.chain, data, pknetnlp.table_indices, pknetnlp.epv_g)
 
 function mul_prod!(res:: Vector{T}, pknetnlp :: PartitionedKnetNLPModel{T,S,P}, v :: Vector{T}) where {T<:Number, S, P}
 	eplom_B = pknetnlp.eplom_B
