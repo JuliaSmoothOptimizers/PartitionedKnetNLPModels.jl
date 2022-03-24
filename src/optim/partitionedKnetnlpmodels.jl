@@ -56,7 +56,7 @@ function PartitionedKnetNLPModel(chain_ANN :: P;
 	epv_work = similar(epv_g)
 	epv_res = similar(epv_g)
 	(name==:plbfgs) && (eplom_B = eplom_lbfgs_from_epv(epv_g))
-	(name==:plsr1) && (eplom_B = eplom_lbfgs_from_epv(epv_g))
+	(name==:plsr1) && (eplom_B = eplom_lsr1_from_epv(epv_g))
 	(name==:plse) && (eplom_B = eplom_lose_from_epv(epv_g))
 	(name==:pbfgs) && (eplom_B = epm_from_epv(epv_g))
 	(name==:psr1) && (eplom_B = epm_from_epv(epv_g))

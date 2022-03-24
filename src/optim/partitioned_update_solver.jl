@@ -27,7 +27,7 @@ function partitioned_update_solver(nlp :: AbstractNLPModel, B :: AbstractLinearO
 	∇f₀ = NLPModels.grad(nlp, x₀)
 	∇fNorm2 = norm(∇f₀,2)
 
-	println("Start trust-region PLBFGS using truncated conjugate-gradient")
+	println("Start trust-region PQN update using truncated conjugate-gradient")
 	(x,iter) = TRCG_KNLP_PUS(nlp, B; max_eval=max_eval, max_time=max_time, kwargs...)
 
 	Δt = time() - start_time
