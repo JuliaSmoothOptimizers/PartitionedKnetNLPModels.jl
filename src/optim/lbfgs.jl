@@ -76,7 +76,7 @@ function TR_CG_ANLP_LBFGS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T
 	ϵ::Float64=1e-6,
 	δ::Float64=1.,
 	ϕ::Float64=2.,
-	∇f₀::AbstractVector=NLPModels.grad(nlp, nlp.meta.x0),
+	∇f₀::AbstractVector=NLPModels.grad(nlp, nlp.x0),
 	iter_print::Int64=Int(floor(max_iter/100)),
 	is_KnetNLPModel::Bool=false,
 	kwargs...,
