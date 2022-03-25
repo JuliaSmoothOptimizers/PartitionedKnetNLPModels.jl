@@ -83,7 +83,7 @@ function TR_CG_ANLP_LBFGS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T
 	) where T <: Number
 
 	iter = 0 # ≈ k
-	gₖ = similar(x0)
+	gₖ = similar(x)
 	gₖ .= ∇f₀
 	gₜₘₚ = similar(gₖ)
 	yₖ = similar(gₖ)
