@@ -149,6 +149,7 @@ function compute_ratio(x::Vector{T}, fₖ::T, sₖ::Vector{T}, nlp::AbstractNLPM
 	mₖ₊₁ =  fₖ + dot(gₖ,sₖ) + 1/2 * (dot((B*sₖ),sₖ))
 	xₖ₊₁ = x+sₖ
 	fₖ₊₁ = NLPModels.obj(nlp, xₖ₊₁)
+	set_vars!(nlp, xₖ)
 	ρₖ = (fₖ - fₖ₊₁)/(fₖ - mₖ₊₁)
 	return (ρₖ,fₖ₊₁)
 end
