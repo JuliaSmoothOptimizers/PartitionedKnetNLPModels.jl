@@ -2,13 +2,7 @@ using LinearOperators, NLPModels, LinearAlgebra, LinearAlgebra.BLAS, Krylov
 using KnetNLPModels
 using Printf, SolverTools, SolverCore
 
-<<<<<<< HEAD
 LBFGS(nlp :: AbstractKnetNLPModel; kwargs...) = Generic_LBFGS(nlp; is_KnetNLPModel=true, kwargs...)
-=======
-
-# LBFGS(nlp :: PartitionedKnetNLPModel; kwargs...) = Generic_LBFGS(nlp; is_KnetNLPModel=true, kwargs...)
-LBFGS(nlp :: AbstractKnetNLPModel; kwargs...) = Generic_LBFGS(nlp; is_KnetNLPModel=true, kwargs...) 
->>>>>>> b498c54487a05d50e9b47e0a285895e2dceb1f5d
 function Generic_LBFGS(nlp :: AbstractNLPModel;
 	x::AbstractVector=copy(nlp.meta.x0),
 	T::DataType = eltype(x),
