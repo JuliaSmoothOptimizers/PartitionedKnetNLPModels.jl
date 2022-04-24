@@ -68,7 +68,7 @@ function PartitionedKnetNLPModel(chain_ANN :: P;
 
 	counter= Counter_accuracy(T)
 
-	return PartitionedKnetNLPModel{T, Vector{T}, P, Y}(meta, n, C, chain_ANN, Counters(), data_train, data_test, size_minibatch, minibatch_train, minibatch_test, current_minibatch_training, current_minibatch_testing, x0, w0, layers_g, nested_array, epv_g, epv_s, epv_work, epv_res, eplom_B, table_indices, name, count)
+	return PartitionedKnetNLPModel{T, Vector{T}, P, Y}(meta, n, C, chain_ANN, Counters(), data_train, data_test, size_minibatch, minibatch_train, minibatch_test, current_minibatch_training, current_minibatch_testing, x0, w0, layers_g, nested_array, epv_g, epv_s, epv_work, epv_res, eplom_B, table_indices, name, counter)
 end
 
 """
