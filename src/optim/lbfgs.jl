@@ -81,10 +81,10 @@ function TR_CG_ANLP_LBFGS(nlp :: AbstractKnetNLPModel, B :: AbstractLinearOperat
 	ϕ::Float64=2.,
 	∇f₀::AbstractVector=NLPModels.grad(nlp, x),
 	iter_print::Int64=Int(floor(max_iter/100)),
-	is_KnetNLPModel::Bool=false,
-	kwargs...,
+	is_KnetNLPModel::Bool=false,	
 	verbose::Bool=true,
 	data::Bool=true,
+	kwargs...,
 	) where T <: Number
 
   @show is_KnetNLPModel
