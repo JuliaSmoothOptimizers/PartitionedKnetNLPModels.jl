@@ -153,5 +153,3 @@ function compute_ratio(x::Vector{T}, fₖ::T, sₖ::Vector{T}, nlp::AbstractNLPM
 	ρₖ = (fₖ - fₖ₊₁)/(fₖ - mₖ₊₁)
 	return (ρₖ,fₖ₊₁)
 end
-
-# regarder l'évolution du calcul du gradient

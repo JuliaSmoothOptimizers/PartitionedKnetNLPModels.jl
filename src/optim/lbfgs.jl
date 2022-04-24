@@ -1,19 +1,17 @@
 using LinearOperators, NLPModels, LinearAlgebra, LinearAlgebra.BLAS, Krylov
 using Printf, SolverTools, SolverCore
 
-
-
-LBFGS(nlp :: PartitionedKnetNLPModel; kwargs...) = Generic_LBFGS(nlp; is_KnetNLPModel=true, kwargs...)
+LBFGS(nlp :: AbstractKnetNLPModel; kwargs...) = Generic_LBFGS(nlp; is_KnetNLPModel=true, kwargs...)
 function Generic_LBFGS(nlp :: AbstractNLPModel;
 	x::AbstractVector=copy(nlp.meta.x0),
 	T::DataType = eltype(x),
 	kwargs...)
-	B = LBFGSOperator(T,nlp.meta.nvar, scaling=true) #:: LBFGSOperator{T} #scaling=true
+	B = LBFGSOperator(T, nlp.meta.nvar, scaling=true) #:: LBFGSOperator{T} #scaling=true
 	println("LBFGSOperator{$T} ✅")
 	return Generic_LBFGS(nlp, B; x=x, kwargs...)
 end
 
-function Generic_LBFGS(nlp :: PartitionedKnetNLPModel, B :: AbstractLinearOperator{T};
+function Generic_LBFGS(nlp :: AbstractKnetNLPModel, B :: AbstractLinearOperator{T};
 	max_eval :: Int=10000,
 	max_iter::Int=10000,
 	start_time::Float64=time(),
@@ -27,7 +25,7 @@ function Generic_LBFGS(nlp :: PartitionedKnetNLPModel, B :: AbstractLinearOperat
 	∇fNorm2 = norm(∇f₀,2)
 
 	println("Start trust-region LBFGS using truncated conjugate-gradient")
-	(x,iter) = TR_CG_ANLP_LBFGS(nlp, B; max_eval=max_eval, max_time=max_time, kwargs...)
+	(x,iter) = TR_CG_ANLP_LBFGS(nlp, B; max_eval=max_eval, max_time=max_time, is_KnetNLPModel=true, kwargs...)
 
 	Δt = time() - start_time
 	g = NLPModels.grad(nlp, x)
@@ -116,7 +114,8 @@ function TR_CG_ANLP_LBFGS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T
 		if ρₖ > η
 			x .= x .+ sₖ; gₜₘₚ .= gₖ
 			NLPModels.grad!(nlp, x, gₖ); fₖ = fₖ₊₁
-			yₖ .= gₖ .- gₜₘₚ; push!(B, sₖ, yₖ)
+			yₖ .= gₖ .- gₜₘₚ
+			push!(B, sₖ, yₖ)
 			@printf "✅\n"
 		else
 			@printf "❌\n"
