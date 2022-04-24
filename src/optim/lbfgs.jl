@@ -87,7 +87,6 @@ function TR_CG_ANLP_LBFGS(nlp :: AbstractKnetNLPModel, B :: AbstractLinearOperat
 	kwargs...,
 	) where T <: Number
 
-  @show is_KnetNLPModel
 	iter = 0 # ≈ k
 	gₖ = similar(x)
 	gₖ .= ∇f₀
@@ -118,7 +117,6 @@ function TR_CG_ANLP_LBFGS(nlp :: AbstractKnetNLPModel, B :: AbstractLinearOperat
    
 		cg_res = Krylov.cg(B, - gₖ, atol=T(atol), rtol=cgtol, radius = T(Δ), itmax=max(2 * n, 50))
 		sₖ = cg_res[1]  # result of the linear system solved by Krylov.cg
-    @show norm(sₖ,2)
 
 		(ρₖ, fₖ₊₁) = compute_ratio(x, fₖ, sₖ, nlp, B, gₖ) # we compute the ratio
 		# step acceptance + update f,g
