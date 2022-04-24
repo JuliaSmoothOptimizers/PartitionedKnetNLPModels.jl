@@ -1,7 +1,14 @@
 using LinearOperators, NLPModels, LinearAlgebra, LinearAlgebra.BLAS, Krylov
+using KnetNLPModels
 using Printf, SolverTools, SolverCore
 
+<<<<<<< HEAD
 LBFGS(nlp :: AbstractKnetNLPModel; kwargs...) = Generic_LBFGS(nlp; is_KnetNLPModel=true, kwargs...)
+=======
+
+# LBFGS(nlp :: PartitionedKnetNLPModel; kwargs...) = Generic_LBFGS(nlp; is_KnetNLPModel=true, kwargs...)
+LBFGS(nlp :: AbstractKnetNLPModel; kwargs...) = Generic_LBFGS(nlp; is_KnetNLPModel=true, kwargs...) 
+>>>>>>> b498c54487a05d50e9b47e0a285895e2dceb1f5d
 function Generic_LBFGS(nlp :: AbstractNLPModel;
 	x::AbstractVector=copy(nlp.meta.x0),
 	T::DataType = eltype(x),
@@ -59,7 +66,7 @@ function Generic_LBFGS(nlp :: AbstractKnetNLPModel, B :: AbstractLinearOperator{
 end
 
 
-function TR_CG_ANLP_LBFGS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
+function TR_CG_ANLP_LBFGS(nlp :: AbstractKnetNLPModel, B :: AbstractLinearOperator{T};
 	x::AbstractVector=copy(nlp.meta.x0),
 	n::Int=nlp.meta.nvar,
 	max_eval::Int=10000,
@@ -74,12 +81,13 @@ function TR_CG_ANLP_LBFGS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T
 	ϵ::Float64=1e-6,
 	δ::Float64=1.,
 	ϕ::Float64=2.,
-	∇f₀::AbstractVector=NLPModels.grad(nlp, nlp.x0),
+	∇f₀::AbstractVector=NLPModels.grad(nlp, x),
 	iter_print::Int64=Int(floor(max_iter/100)),
 	is_KnetNLPModel::Bool=false,
 	kwargs...,
 	) where T <: Number
 
+  @show is_KnetNLPModel
 	iter = 0 # ≈ k
 	gₖ = similar(x)
 	gₖ .= ∇f₀
@@ -101,13 +109,15 @@ function TR_CG_ANLP_LBFGS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T
 	_max_iter(iter, max_iter) = iter < max_iter
 	_max_time(start_time) = (time() - start_time) < max_time
 	while absolute(n,gₖ,ϵ) && relative(n,gₖ,ϵ,∇fNorm2) && _max_iter(iter, max_iter) & _max_time(start_time) && isnan(ρₖ)==false# stop condition
-		@printf "%3d %4g %8.1e %7.1e %7.1e %7.1e %8.3e" iter (time() - start_time) fₖ norm(gₖ,2) Δ  ρₖ accuracy(nlp)
+		@printf "%3d %4g %8.1e %7.1e %7.1e %7.1e %8.3e" iter (time() - start_time) fₖ norm(gₖ,2) Δ  ρₖ KnetNLPModels.accuracy(nlp)
 
 		iter += 1
-		
+		fₖ = NLPModels.obj(nlp, x)
+    NLPModels.grad!(nlp, x, gₖ);
+   
 		cg_res = Krylov.cg(B, - gₖ, atol=T(atol), rtol=cgtol, radius = T(Δ), itmax=max(2 * n, 50))
 		sₖ = cg_res[1]  # result of the linear system solved by Krylov.cg
-
+    @show norm(sₖ,2)
 
 		(ρₖ, fₖ₊₁) = compute_ratio(x, fₖ, sₖ, nlp, B, gₖ) # we compute the ratio
 		# step acceptance + update f,g
@@ -130,7 +140,7 @@ function TR_CG_ANLP_LBFGS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T
 		# periodic printer
 	end
 	@printf "iter temps fₖ norm(gₖ,2) Δ ρₖ accuracy\n" 
-	@printf "%3d %4g %8.1e %7.1e %7.1e %7.1e %8.3e" iter (time() - start_time) fₖ norm(gₖ,2) Δ  ρₖ accuracy(nlp)
+	@printf "%3d %4g %8.1e %7.1e %7.1e %7.1e %8.3e" iter (time() - start_time) fₖ norm(gₖ,2) Δ  ρₖ KnetNLPModels.accuracy(nlp)
 
 	return (x, iter)
 end
