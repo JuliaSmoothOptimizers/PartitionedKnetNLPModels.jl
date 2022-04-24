@@ -114,7 +114,7 @@ function TRCG_KNLP_PUS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
     NLPModels.grad!(nlp, x, gₖ)
 
 		(verbose || data ) && (acc = KnetNLPModels.accuracy(nlp))
-		verbose && @printf "%3d %4g %8.1e %7.1e %7.1e %7.1e %8.3e" iter (time() - start_time) fₖ norm(gₖ,2) Δ  ρₖ acc 
+		verbose && @printf "%3d %4g %8.1e %7.1e %7.1e %7.1e %8.3e\n" iter (time() - start_time) fₖ norm(gₖ,2) Δ  ρₖ acc 
 		data && push_acc!(nlp.counter, acc)
    
 		cg_res = Krylov.cg(B, - gₖ, atol=T(atol), rtol=cgtol, radius = T(Δ), itmax=max(2 * n, 50))
