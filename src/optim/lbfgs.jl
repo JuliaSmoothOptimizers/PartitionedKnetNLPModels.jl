@@ -28,6 +28,10 @@ function Generic_LBFGS(nlp :: AbstractKnetNLPModel, B :: AbstractLinearOperator{
 	println("Start trust-region LBFGS using truncated conjugate-gradient")
 	(x,iter) = TR_CG_ANLP_LBFGS(nlp, B; max_eval=max_eval, max_time=max_time, is_KnetNLPModel=true, kwargs...)
 
+	io = open("src/optim/results/accuracy_LBFGS.txt", "w+")	
+	write(io, string(nlp.counter.acc))
+	close(io)
+	
 	Δt = time() - start_time
 	g = NLPModels.grad(nlp, x)
 	nrm_grad = norm(g,2)
@@ -79,6 +83,8 @@ function TR_CG_ANLP_LBFGS(nlp :: AbstractKnetNLPModel, B :: AbstractLinearOperat
 	iter_print::Int64=Int(floor(max_iter/100)),
 	is_KnetNLPModel::Bool=false,
 	kwargs...,
+	verbose::Bool=true,
+	data::Bool=true,
 	) where T <: Number
 
   @show is_KnetNLPModel
@@ -89,9 +95,8 @@ function TR_CG_ANLP_LBFGS(nlp :: AbstractKnetNLPModel, B :: AbstractLinearOperat
 	yₖ = similar(gₖ)
 	∇fNorm2 = nrm2(n, ∇f₀)
 
-	fₖ = NLPModels.obj(nlp, x)
-	
-	@printf "iter temps fₖ norm(gₖ,2) Δ ρₖ accuracy\n" 
+	fₖ = NLPModels.obj(nlp, x)	
+	verbose && @printf "iter temps fₖ norm(gₖ,2) Δ ρₖ accuracy\n" 
 
 	cgtol = one(T)  # Must be ≤ 1.
 	cgtol = max(rtol, min(T(0.1), 9 * cgtol / 10, sqrt(∇fNorm2)))
@@ -103,11 +108,13 @@ function TR_CG_ANLP_LBFGS(nlp :: AbstractKnetNLPModel, B :: AbstractLinearOperat
 	_max_iter(iter, max_iter) = iter < max_iter
 	_max_time(start_time) = (time() - start_time) < max_time
 	while absolute(n,gₖ,ϵ) && relative(n,gₖ,ϵ,∇fNorm2) && _max_iter(iter, max_iter) & _max_time(start_time) && isnan(ρₖ)==false# stop condition
-		@printf "%3d %4g %8.1e %7.1e %7.1e %7.1e %8.3e" iter (time() - start_time) fₖ norm(gₖ,2) Δ  ρₖ KnetNLPModels.accuracy(nlp)
-
 		iter += 1
 		fₖ = NLPModels.obj(nlp, x)
     NLPModels.grad!(nlp, x, gₖ);
+
+		(verbose || data ) && acc = KnetNLPModels.accuracy(nlp)
+		verbose && @printf "%3d %4g %8.1e %7.1e %7.1e %7.1e %8.3e" iter (time() - start_time) fₖ norm(gₖ,2) Δ  ρₖ acc 
+		data && push_acc!(nlp.counter, acc)
    
 		cg_res = Krylov.cg(B, - gₖ, atol=T(atol), rtol=cgtol, radius = T(Δ), itmax=max(2 * n, 50))
 		sₖ = cg_res[1]  # result of the linear system solved by Krylov.cg

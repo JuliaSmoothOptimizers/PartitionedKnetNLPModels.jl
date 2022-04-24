@@ -30,6 +30,10 @@ function partitioned_update_solver(nlp :: AbstractNLPModel, B :: AbstractLinearO
 	println("Start trust-region PQN update using truncated conjugate-gradient")
 	(x,iter) = TRCG_KNLP_PUS(nlp, B; max_eval=max_eval, max_time=max_time, kwargs...)
 
+	io_acc_pus = open("src/optim/results/accuracy_PUS.txt", "w+")	
+	write(io, string(nlp.counter.acc))
+	close(io)
+	
 	Δt = time() - start_time
 	g = NLPModels.grad(nlp, x)
 	nrm_grad = norm(g,2)
@@ -80,6 +84,8 @@ function TRCG_KNLP_PUS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	∇f₀::AbstractVector=NLPModels.grad(nlp, nlp.meta.x0),
 	iter_print::Int64=Int(floor(max_iter/100)),
 	is_KnetNLPModel::Bool=false,
+	verbose::Bool=true,
+	data::Bool=true,
 	kwargs...,
 	) where T <: Number
 
@@ -91,15 +97,7 @@ function TRCG_KNLP_PUS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	∇fNorm2 = nrm2(n, ∇f₀)
 
 	fₖ = NLPModels.obj(nlp, x)
-	# xone = ones(T, n)
-	# Bxone = similar(xone)
-	# res = similar(xone)
-	
-	# Bxone = B * xone
-	# mul_prod!(res, nlp, xone)
-	# println("iter : ", iter, ", norm B*ones : ", nrm2(n, Bxone), ", norm eplom_B*ones : ", nrm2(n, res))
-
-	@printf "iter temps fₖ norm(gₖ,2) Δ ρₖ accuracy\n" 
+	verbose && @printf "iter temps fₖ norm(gₖ,2) Δ ρₖ accuracy\n" 
 
 	cgtol = one(T)  # Must be ≤ 1.
 	cgtol = max(rtol, min(T(0.1), 9 * cgtol / 10, sqrt(∇fNorm2)))
@@ -111,23 +109,22 @@ function TRCG_KNLP_PUS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	_max_iter(iter, max_iter) = iter < max_iter
 	_max_time(start_time) = (time() - start_time) < max_time
 	while absolute(n,gₖ,ϵ) && relative(n,gₖ,ϵ,∇fNorm2) && _max_iter(iter, max_iter) & _max_time(start_time) && isnan(ρₖ)==false# stop condition
- 
+		iter += 1
     fₖ = NLPModels.obj(nlp, x)
     NLPModels.grad!(nlp, x, gₖ)
-		@printf "k: %3d, t: %4g, fx: %8.1e, ||g||:%7.1e, Δ:%7.1e,  ρₖ:%7.1e, acc:%8.3e" iter (time() - start_time) fₖ norm(gₖ,2) Δ ρₖ KnetNLPModels.accuracy(nlp)
 
-		iter += 1
-	
+		(verbose || data ) && acc = KnetNLPModels.accuracy(nlp)
+		verbose && @printf "%3d %4g %8.1e %7.1e %7.1e %7.1e %8.3e" iter (time() - start_time) fₖ norm(gₖ,2) Δ  ρₖ acc 
+		data && push_acc!(nlp.counter, acc)
+   
 		cg_res = Krylov.cg(B, - gₖ, atol=T(atol), rtol=cgtol, radius = T(Δ), itmax=max(2 * n, 50))
 		sₖ .= cg_res[1]  # result of the linear system solved by Krylov.cg
     
 		(ρₖ, fₖ₊₁) = compute_ratio(x, fₖ, sₖ, nlp, B, gₖ) # we compute the ratio
 		# step acceptance + update f,g
 		if ρₖ > η
-      @printf "\n norm(s): %8.3e, norm(x) : %8.3e" norm(sₖ,2) norm(x,2)
       xtmp .= x
 			x .= x .+ sₖ
-      @printf "\n norm(x-xtmp): %8.3e \n" norm(x-xtmp,2)
 			epv_from_epv!(nlp.epv_work, nlp.epv_g)
 			NLPModels.grad!(nlp, x, gₖ)
 			minus_epv!(nlp.epv_work)
@@ -157,7 +154,6 @@ function compute_ratio(x::Vector{T}, fₖ::T, sₖ::Vector{T}, nlp::AbstractNLPM
 	mₖ₊₁ =  fₖ + dot(gₖ,sₖ) + 1/2 * (dot((B*sₖ),sₖ))
 	xₖ₊₁ = x+sₖ
 	fₖ₊₁ = NLPModels.obj(nlp, xₖ₊₁)
-  println("fxk: ", fₖ, " mk+: ", mₖ₊₁, " fk+1: ", fₖ₊₁, " ||gk||", norm(gₖ,2))  
 	set_vars!(nlp, x)
 	ρₖ = (fₖ - fₖ₊₁)/(fₖ - mₖ₊₁)
 	return (ρₖ,fₖ₊₁)
