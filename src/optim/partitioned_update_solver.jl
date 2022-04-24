@@ -113,7 +113,7 @@ function TRCG_KNLP_PUS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
     fₖ = NLPModels.obj(nlp, x)
     NLPModels.grad!(nlp, x, gₖ)
 
-		(verbose || data ) && acc = KnetNLPModels.accuracy(nlp)
+		(verbose || data ) && (acc = KnetNLPModels.accuracy(nlp))
 		verbose && @printf "%3d %4g %8.1e %7.1e %7.1e %7.1e %8.3e" iter (time() - start_time) fₖ norm(gₖ,2) Δ  ρₖ acc 
 		data && push_acc!(nlp.counter, acc)
    
