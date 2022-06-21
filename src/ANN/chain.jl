@@ -6,9 +6,10 @@ struct Chain_NLL <: KnetNLPModels.Chain
 	layers
 	Chain_NLL(layers...) = new(layers)
 end
-(c::Chain_NLL)(x) = (for l in c.layers; x = l(x); end; x)
-(c::Chain_NLL)(x,y) = nll(c(x),y)  # nécessaire
-(c::Chain_NLL)(d::Knet.Data) = nll(c; data=d, average=true)
+(c::Chain_NLL)(x) = (for l in c.layers; x = l(x); end; x) 
+(c::Chain_NLL)(x,y) = nll(c(x),y) # nécessaire
+(c::Chain_NLL)(data :: Tuple{T1,T2}) where {T1,T2} = nll(c(data[1]), data[2], average=true)
+(c::Chain_NLL)(d::Knet.Data) = nll(c; data=d, average=true) 
 # no_dropout(c::Chain_NLL)=map(l -> ones(Bool,input(l)), c.layers) 
 # à utiliser une fois que vec_dropout a été correctement initialisé
 # no_dropout!(c::Chain_NLL,vec_dropout::Vector{Vector{Bool}}) =	map!(l-> l .= ones(Bool, length(l)), vec_dropout, c.layers)
@@ -20,7 +21,6 @@ mutable struct Chain_PSLAP <: KnetNLPModels.Chain
 end
 (c::Chain_PSLAP)(x) = (for l in c.layers; x = l(x); end; x)
 (c::Chain_PSLAP)(x,y) = PSLAP(c(x),y)
-# ml4(es,l) = -log(es[l]) + sum([i==l ? 0 : es[i] for i in 1:length(es)]) # ne pas mettre cette ligne =erreur diff auto
 (c::Chain_PSLAP)(d::Knet.Data) = PSLAP(c; data=d, average=true)
 function PSLAP(model; data, dims=1, average=true, o...)	
 	sum = cnt = 0
