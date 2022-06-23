@@ -32,7 +32,7 @@ function _PartPSLDP(model; data, dims=1, average=true, o...)
 end
 function PartPSLDP(scores,labels :: AbstractArray{<:Integer}; dims=1, average=true)
 	indices = findindices(scores, labels, dims=dims)
-	losses = exp.(scores .- reshape(scores[indices],1,length(indices))) # diminue par les scores par celui que l'on cherche à obtenir
+	losses = exp.(scores .- reshape(scores[indices], 1, length(indices))) # diminue par les scores par celui que l'on cherche à obtenir
 	# absence de garantie < 1
 	C = size(scores,1)
 	acc = sum(losses)
