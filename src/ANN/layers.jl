@@ -45,6 +45,7 @@ input(d::PsDense) = size(d)[2]
 
 """
     ps(psd::PsDense, Dep::Vector{Vector{int}})
+		
 pour chaque noeud on va ajouter les dépendances du layer propre (excepté dropout) 
 on y ajoute ensuite les dépendances (car dense) de la couche précédente modélisé par Di (à modérer avec le dropout)
 Le cas de la couche Dense est particulier, sans dropout il n'a que peu d'intérêt
@@ -105,6 +106,7 @@ end
 
 """
     ps(pss::PsSep, Dep::Vector{Vector{int}})
+		
 pour chaque noeud on va ajouter les dépendances du layer propre: une sous partie de la couche précédente (+ dropout) 
 on y ajoute ensuite certaines dépendances de la couche précédente modélisé par Di (à modérer avec le dropout)
 Dans le cas PS, la propagation des variables sera moins intense que le cas Dense
