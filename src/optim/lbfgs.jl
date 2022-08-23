@@ -18,6 +18,7 @@ function Generic_LBFGS(nlp :: AbstractKnetNLPModel, B :: AbstractLinearOperator{
 	start_time::Float64=time(),
 	max_time :: Float64=30.0,
 	ϵ::Float64= 1e-6,
+  printing::Bool=false,
 	kwargs...) where T <: Number
 
 	x₀ = nlp.meta.x0
@@ -28,9 +29,9 @@ function Generic_LBFGS(nlp :: AbstractKnetNLPModel, B :: AbstractLinearOperator{
 	println("Start trust-region LBFGS using truncated conjugate-gradient")
 	(x,iter) = TR_CG_ANLP_LBFGS(nlp, B; max_eval=max_eval, max_time=max_time, is_KnetNLPModel=true, kwargs...)
 
-	io = open("src/optim/results/accuracy_LBFGS.txt", "w+")	
-	write(io, string(nlp.counter.acc))
-	close(io)
+	printing && (io = open("src/optim/results/accuracy_LBFGS.txt", "w+")	)
+	printing && (write(io, string(nlp.counter.acc)))
+	printing && (close(io))
 	
 	Δt = time() - start_time
 	g = NLPModels.grad(nlp, x)

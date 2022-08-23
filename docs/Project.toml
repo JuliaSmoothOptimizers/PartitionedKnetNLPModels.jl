@@ -1,5 +1,6 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+PartitionedKnetNLPModels = "8e4ecd56-36bb-44b4-aaaf-5deefd9141d8"
 
 [compat]
 Documenter = "~0.25"
