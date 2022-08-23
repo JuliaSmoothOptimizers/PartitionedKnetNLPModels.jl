@@ -1,5 +1,8 @@
-
+using CUDA 
 @testset "PartitionedKnetNLPModel and PUS tests" begin
+  ENV["DATADEPS_ALWAYS_ACCEPT"] = true # download datasets without having to manually confirm the download
+  CUDA.allowscalar(true)
+
   C = 10 # nombre de classe ≈ N 
   layer_PS = [20,10,1] 
   Part_PSNet = PartChainPSLDP(Conv(4,4,1,6), Conv(4,4,6,16), SL(160,C,layer_PS[1]),  SL(C*layer_PS[1],C,layer_PS[2]), SL(C*layer_PS[2],C,layer_PS[3];f=identity))
