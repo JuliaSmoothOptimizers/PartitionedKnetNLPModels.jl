@@ -72,18 +72,6 @@ function PartitionedKnetNLPModel(chain_ANN :: P;
 	return PartitionedKnetNLPModel{T, Vector{T}, P, Y, V}(meta, n, C, chain_ANN, Counters(), data_train, data_test, size_minibatch, training_minibatch_iterator, test_minibatch_iterator, current_training_minibatch, current_test_minibatch, x0, w0, layers_g, nested_array, epv_g, epv_s, epv_work, epv_res, eplom_B, table_indices, name, counter)
 end
 
-# """
-# 		set_size_minibatch!(knetnlp, size_minibatch)
-
-# Change the size of the minibatchs of training and testing of the `knetnlp`.
-# After a call of `set_size_minibatch!`, if one want to use a minibatch of size `size_minibatch` it must use beforehand `reset_minibatch_train!`.
-# """
-# function set_size_minibatch!(pknetnlp :: PartitionedKnetNLPModel, size_minibatch :: Int) 
-# 	pknetnlp.size_minibatch = size_minibatch
-# 	pknetnlp.minibatch_train = create_minibatch(pknetnlp.data_train[1], pknetnlp.data_train[2], pknetnlp.size_minibatch)
-# 	pknetnlp.minibatch_test = create_minibatch(pknetnlp.data_test[1], pknetnlp.data_test[2], pknetnlp.size_minibatch)
-# end
-
 partitioned_gradient!(pknetnlp :: PartitionedKnetNLPModel; data=pknetnlp.current_training_minibatch) = partitioned_gradient!(pknetnlp.chain, data, pknetnlp.table_indices, pknetnlp.epv_g)
 
 function mul_prod!(res:: Vector{T}, pknetnlp :: PartitionedKnetNLPModel{T,S,P}, v :: Vector{T}) where {T<:Number, S, P}

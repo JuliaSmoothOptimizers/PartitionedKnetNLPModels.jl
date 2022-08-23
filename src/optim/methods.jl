@@ -7,7 +7,6 @@
 		increment!(nlp, :neval_obj)
 		set_vars!(nlp, w)
 		res = nlp.chain(nlp.current_training_minibatch)
-		# res = nlp.chain(nlp.minibatch_train) # whole dataset
 		f_w = sum(sum.(res))
 		return f_w
 	end
@@ -22,7 +21,6 @@
 		increment!(nlp, :neval_grad)
 		set_vars!(nlp, w)  
 		partitioned_gradient!(nlp)
-		# partitioned_gradient!(nlp; data=nlp.minibatch_train) # whole dataset
 		build_v!(nlp.epv_g)
 		g .= get_v(nlp.epv_g)
 		return g
