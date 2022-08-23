@@ -48,11 +48,11 @@
 		@test length(all_dep_psp) == length(vector_params(PSNet))
 
 		for i in 1:length(psp)
-			@test length(psp[i]) == 426571
+			@test length(psp[i]) == 6026
 		end 		
 
 		for i in 1:length(psp)
-			@test psp[1][1:426000] == psp[i][1:426000]
+			@test psp[1][1:300] == psp[i][1:300]
 		end 
 	end 
 	
