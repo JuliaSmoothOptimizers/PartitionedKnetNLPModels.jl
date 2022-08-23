@@ -10,7 +10,7 @@ function partitioned_update_solver(nlp :: AbstractNLPModel;
 	n = nlp.meta.nvar
 	B(nlp) = LinearOperator(T, n, n, true, true, (res, v)-> mul_prod!(res, nlp, v))
 	type_update = nlp.name
-	println("LinearOperator{$T} ✅from $type_update")
+	println("LinearOperator{$T} ✅ from $type_update")
 	return partitioned_update_solver(nlp, B(nlp); x=x, kwargs...)
 end
 
@@ -20,6 +20,7 @@ function partitioned_update_solver(nlp :: AbstractNLPModel, B :: AbstractLinearO
 	start_time::Float64=time(),
 	max_time :: Float64=30.0,
 	ϵ::Float64= 1e-6,
+  printing::Bool=false,
 	kwargs...) where T <: Number
 
 	x₀ = nlp.meta.x0
@@ -30,9 +31,9 @@ function partitioned_update_solver(nlp :: AbstractNLPModel, B :: AbstractLinearO
 	println("Start trust-region PQN update using truncated conjugate-gradient")
 	(x,iter) = TRCG_KNLP_PUS(nlp, B; max_eval=max_eval, max_time=max_time, kwargs...)
 
-	io = open("src/optim/results/accuracy_PUS_" * string(nlp.name) * ".txt", "w+")	
-	write(io, string(nlp.counter.acc))
-	close(io)
+	printing && (io = open("src/optim/results/accuracy_PUS_" * string(nlp.name) * ".txt", "w+")	)
+	printing && (write(io, string(nlp.counter.acc)))
+	printing && (close(io))
 	
 	Δt = time() - start_time
 	g = NLPModels.grad(nlp, x)
