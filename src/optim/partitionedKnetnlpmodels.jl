@@ -1,6 +1,6 @@
 using CUDA, Knet, KnetNLPModels, MLDatasets, NLPModels
 
-mutable struct PartitionedKnetNLPModel{T <: Number, S, C <: PartitionedChain, Y <: Part_mat{T}} <: AbstractKnetNLPModel{T, S}
+mutable struct PartitionedKnetNLPModel{T <: Number, S, C <: PartitionedChain, Y <: Part_mat{T}, V} <: AbstractKnetNLPModel{T, S}
 	meta :: NLPModelMeta{T, S}
 	n :: Int
 	C :: Int
@@ -16,7 +16,7 @@ mutable struct PartitionedKnetNLPModel{T <: Number, S, C <: PartitionedChain, Y 
 	x0 :: S
 	w :: S # == Vector{T}
 	layers_g :: Vector{Param}
-	nested_cuArray :: Vector{CuArray{T, N, CUDA.Mem.DeviceBuffer} where N}
+	nested_array :: V
 	epv_g :: Elemental_pv{T}
 	epv_s :: Elemental_pv{T}
 	epv_work :: Elemental_pv{T}
@@ -58,17 +58,18 @@ function PartitionedKnetNLPModel(chain_ANN :: P;
 	epv_s = similar(epv_g)
 	epv_work = similar(epv_g)
 	epv_res = similar(epv_g)
-	(name==:plbfgs) && (eplom_B = eplom_lbfgs_from_epv(epv_g))
-	(name==:plsr1) && (eplom_B = eplom_lsr1_from_epv(epv_g))
-	(name==:plse) && (eplom_B = eplom_lose_from_epv(epv_g))
+	(name==:plbfgs) && (eplom_B = eplo_lbfgs_from_epv(epv_g))
+	(name==:plsr1) && (eplom_B = eplo_lsr1_from_epv(epv_g))
+	(name==:plse) && (eplom_B = eplo_lose_from_epv(epv_g))
 	(name==:pbfgs) && (eplom_B = epm_from_epv(epv_g))
 	(name==:psr1) && (eplom_B = epm_from_epv(epv_g))
 	(name==:pse) && (eplom_B = epm_from_epv(epv_g))
 	Y = typeof(eplom_B)
+  V = typeof(nested_array)
 
 	counter= Counter_accuracy(T)
 
-	return PartitionedKnetNLPModel{T, Vector{T}, P, Y}(meta, n, C, chain_ANN, Counters(), data_train, data_test, size_minibatch, minibatch_train, minibatch_test, current_minibatch_training, current_minibatch_testing, x0, w0, layers_g, nested_array, epv_g, epv_s, epv_work, epv_res, eplom_B, table_indices, name, counter)
+	return PartitionedKnetNLPModel{T, Vector{T}, P, Y, V}(meta, n, C, chain_ANN, Counters(), data_train, data_test, size_minibatch, minibatch_train, minibatch_test, current_minibatch_training, current_minibatch_testing, x0, w0, layers_g, nested_array, epv_g, epv_s, epv_work, epv_res, eplom_B, table_indices, name, counter)
 end
 
 """
