@@ -19,4 +19,7 @@ using CUDA
 
   nlp_plbfgs = PartitionedKnetNLPModel(Part_PSNet; name=:plbfgs)
   ges_plbfgs = PUS(nlp_plbfgs; max_time, max_iter) #max_iter=10000 = 100 epochs
+
+  nlp_lbfgs = PartitionedKnetNLPModel(Part_PSNet)
+  ges_lbfgs = LBFGS(nlp_lbfgs; max_time, max_iter) 
 end
