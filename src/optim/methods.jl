@@ -6,7 +6,7 @@
 	function NLPModels.obj(nlp :: PartitionedKnetNLPModel{T, S, C}, w :: AbstractVector{T}) where {T, S, C}
 		increment!(nlp, :neval_obj)
 		set_vars!(nlp, w)
-		res = nlp.chain(nlp.current_minibatch_training)
+		res = nlp.chain(nlp.current_training_minibatch)
 		# res = nlp.chain(nlp.minibatch_train) # whole dataset
 		f_w = sum(sum.(res))
 		return f_w

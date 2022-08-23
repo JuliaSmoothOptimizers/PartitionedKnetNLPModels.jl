@@ -14,7 +14,7 @@ using CUDA
   dtrn = create_minibatch(xtrn, ytrn, size_minbatch)	 	 
   dtst = create_minibatch(xtst, ytst, size_minbatch)
 
-  max_time = 25.
+  max_time = 180.
   max_iter = 100
 
   nlp_plbfgs = PartitionedKnetNLPModel(Part_PSNet; name=:plbfgs)
