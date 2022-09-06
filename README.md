@@ -1,38 +1,50 @@
 # PartitionedKnetNLPModels : A partitioned quasi-Newton stochastic method to train partially separable neural networks
 
-| **Documentation** | **Coverage** | **DOI** |
-|:-----------------:|:------------:|:-------:|
+| **Documentation** | **Linux/macOS/Windows/FreeBSD** | **Coverage** |
+|:-----------------:|:-------------------------------:|:------------:|
 | [![docs-stable][docs-stable-img]][docs-stable-url] [![docs-dev][docs-dev-img]][docs-dev-url] | [![build-gh][build-gh-img]][build-gh-url] [![build-cirrus][build-cirrus-img]][build-cirrus-url] | [![codecov][codecov-img]][codecov-url] | [![doi][doi-img]][doi-url] |
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
-[docs-stable-url]: https://paraynaud.github.io/PartitionedKnetNLPModels.jl/stable
+[docs-stable-url]: https://JuliaSmoothOptimizers.github.io/PartitionedKnetNLPModels.jl/stable
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-purple.svg
-[docs-dev-url]: https://paraynaud.github.io/PartitionedKnetNLPModels.jl/dev
-[codecov-img]: https://codecov.io/gh/paraynaud/PartitionedKnetNLPModels.jl/branch/main/graph/badge.svg
-[codecov-url]: https://app.codecov.io/gh/paraynaud/PartitionedKnetNLPModels.jl
-[doi-img]: https://img.shields.io/badge/DOI-10.5281%2Fzenodo.822073-blue.svg
-[doi-url]: https://doi.org/10.5281/zenodo.822073
+[docs-dev-url]: https://JuliaSmoothOptimizers.github.io/PartitionedKnetNLPModels.jl/dev
+[build-gh-img]: https://github.com/JuliaSmoothOptimizers/PartitionedKnetNLPModels.jl/workflows/CI/badge.svg?branch=main
+[build-gh-url]: https://github.com/JuliaSmoothOptimizers/PartitionedKnetNLPModels.jl/actions
+[build-cirrus-img]: https://img.shields.io/cirrus/github/JuliaSmoothOptimizers/PartitionedKnetNLPModels.jl?logo=Cirrus%20CI
+[build-cirrus-url]: https://cirrus-ci.com/github/JuliaSmoothOptimizers/PartitionedKnetNLPModels.jl
+[codecov-img]: https://codecov.io/gh/JuliaSmoothOptimizers/PartitionedKnetNLPModels.jl/branch/main/graph/badge.svg
+[codecov-url]: https://app.codecov.io/gh/JuliaSmoothOptimizers/PartitionedKnetNLPModels.jl
 
 ## Motivation
-The module address a partially separable loss function, such as the neural network training minimize a partially separable functions
+The module address a partially separable loss function, such as the neural network training minimize a partially separable loss function $f: \mathbb{R}^n \to \mathbb{R}$ in the form
+
+$$  
+f(x) = \sum_{i=1}^N f_i (U_i(x)), f_i : \mathbb{R}^{n_i} \to \mathbb{R}, U_i \in \mathbb{R}^{n_i \times n}, n_i \ll n,
 $$
-f(x) = \sum_{=1}^N \hat{f}_i (U_i x), \quad f \in \R^n \to \R, \quad \hat f_i:\R^{n_i} \to \R, \quad U_i \in \R^{n_i \times n}.
-$$
-$f$ is a sum of element functions $\hat{f}_i$, and usually $n_i \ll n$. $U_i$ is a linear operator, it selects the variables used by $\hat{f}_i$.
+
+where:
+* $f_i$ is the $i$-th element function whose dimension is smaller than $f$;
+* $U_i$ the linear operator selecting the linear combinations of variables that parametrize $f_i$.
 
 PartitionedKnetNLPModels.jl define a stochastic trust-region method exploiting the partitioned structure of the derivatives of $f$, the gradient 
+
 $$
 \nabla f(x) = \sum_{i=1}^N U_i^\top \nabla \hat{f}_i (U_i x),
 $$
+
 and the hessian 
+
 $$
 \nabla^2 f(x) = \sum_{i=1}^N U_i^\top \nabla^2 \hat{f_i} (U_i x) U_i,
 $$
-are the sum of the element derivatives $\nabla \hat{f}_i,  \nabla^2\hat{f}_i$.
+
+are the sum of the element derivatives $\nabla \hat{f}_i, \nabla^2\hat{f}_i$.
 This structure allows to define a partitioned quasi-Newton approximation of $\nabla^2 f$
+
 $$
 B = \sum_{i=1}^N U_i^\top \hat{B}_{i} U_i,
 $$
+
 such that each $\hat{B}_i \approx \nabla^2 \hat{f}_i$.
 Contrary to the BFGS and SR1 updates, respectively of rank 1 and 2, the rank of update $B$ is proportionnal to $\min(N,n)$.
 
@@ -99,12 +111,12 @@ The module [Knet](https://github.com/denizyuret/Knet.jl) is used to define the o
 
 [KnetNLPModels](https://github.com/paraynaud/KnetNLPModels.jl) provide an interface between a Knet neural network and the [ADNLPModel](https://github.com/JuliaSmoothOptimizers/ADNLPModels.jl).
 
-The partitioned quasi-Newton operators used in the partially separable training are defined in [PartitionedStructures.jl](https://github.com/paraynaud/PartitionedStructures.jl).
+The partitioned quasi-Newton operators used in the partially separable training are defined in [PartitionedKnetNLPModels.jl](https://github.com/paraynaud/PartitionedKnetNLPModels.jl).
 
 
 ## How to install
 ```
 julia> ]
-pkg> add https://github.com/paraynaud/PartitionedStructures.jl, https://github.com/paraynaud/KnetNLPModels.jl, https://github.com/paraynaud/PartitionedKnetNLPModels.jl, 
+pkg> add https://github.com/paraynaud/PartitionedKnetNLPModels.jl, https://github.com/paraynaud/KnetNLPModels.jl, https://github.com/paraynaud/PartitionedKnetNLPModels.jl, 
 pkg> test PartitionedKnetNLPModels
 ```
