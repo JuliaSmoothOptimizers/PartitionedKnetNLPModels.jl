@@ -25,11 +25,27 @@ function ps(psc::PsConv, dep::Vector{Vector{Int}}; dp=ones(Bool,pss.in))
 	return new_dep
 end 
 
-struct Conv; w; b; f; end
-(c::Conv)(x) = c.f.(pool(conv4(c.w, x) .+ c.b))
+
+# struct Conv; w; b; f; end
+# (c::Conv)(x) = c.f.(pool(conv4(c.w, x) .+ c.b))
+# # (c::Conv)(x) = begin r = c.f.(pool(conv4(c.w, x) .+ c.b)); @show typeof(r), size(r); r end 
+# Conv(w1,w2,cx,cy,f=relu) = Conv(param(w1,w2,cx,cy), param0(1,1,cy,1), f)
+# ps_struct(c::Conv; index::Int=0) = PsConv(size(c.w)...; index=index)
+
+struct Conv; w; b; f; pool_option; end
+(c::Conv)(x) = c.f.(pool(conv4(c.w, x) .+ c.b; mode=c.pool_option))
 # (c::Conv)(x) = begin r = c.f.(pool(conv4(c.w, x) .+ c.b)); @show typeof(r), size(r); r end 
-Conv(w1,w2,cx,cy,f=relu) = Conv(param(w1,w2,cx,cy), param0(1,1,cy,1), f)
+# Conv(w1::Int,w2::Int,cx::Int,cy::Int,f::Function=relu) = Conv(param(w1,w2,cx,cy), param0(1,1,cy,1), f, 0)
+Conv(w1::Int,w2::Int,cx::Int,cy::Int,f::Function=sigm; pool_option::Int=0) = Conv(param(w1,w2,cx,cy), param0(1,1,cy,1), f, pool_option)
 ps_struct(c::Conv; index::Int=0) = PsConv(size(c.w)...; index=index)
+
+
+# struct Conv; w; b; f; mode; end
+# # (c::Conv)(x) = c.f.(pool(conv4(c.w, x) .+ c.b; mode=c.mode))
+# (c::Conv)(x) = c.f.(pool(conv4(c.w, x) .+ c.b))
+# # # (c::Conv)(x) = begin r = c.f.(pool(conv4(c.w, x) .+ c.b)); @show typeof(r), size(r); r end 
+# Conv(w1,w2,cx,cy,f=relu; mode::Int=0) = Conv(param(w1,w2,cx,cy), param0(1,1,cy,1), f, mode)
+# ps_struct(c::Conv; index::Int=0) = PsConv(size(c.w)...; index=index)
 
 
 #= 
