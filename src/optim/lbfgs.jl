@@ -55,7 +55,8 @@ function Generic_LBFGS(nlp :: AbstractKnetNLPModel, B :: AbstractLinearOperator{
 		status = :unknown
 		println("Unknown ❌")
 	end
-	return GenericExecutionStats(status, nlp,
+	return GenericExecutionStats(nlp;
+                         status,
 												 solution=x,
 												 iter=iter,
 												 dual_feas = nrm_grad,
@@ -121,7 +122,9 @@ function TR_CG_ANLP_LBFGS(nlp :: AbstractKnetNLPModel, B :: AbstractLinearOperat
 
 		(ρₖ, fₖ₊₁) = compute_ratio(x, fₖ, sₖ, nlp, B, gₖ) # we compute the ratio
 		# step acceptance + update f,g
-		if ρₖ > η
+    if isnan(ρₖ)
+      @printf "Nan : ❌\n"
+		elseif ρₖ > η
 			x .= x .+ sₖ; gₜₘₚ .= gₖ
 			NLPModels.grad!(nlp, x, gₖ); fₖ = fₖ₊₁
 			yₖ .= gₖ .- gₜₘₚ
@@ -131,8 +134,8 @@ function TR_CG_ANLP_LBFGS(nlp :: AbstractKnetNLPModel, B :: AbstractLinearOperat
 			@printf "❌\n"
 		end				
 		# now we update ∆
-		(ρₖ >= η₁) && ((nrm2(n,sₖ) > 0.8*Δ) ? Δ = ϕ*Δ : Δ = Δ)
-		(ρₖ <= η) && (Δ = (1/ϕ)*Δ)
+		!isnan(ρₖ) && (ρₖ >= η₁) && ((nrm2(n,sₖ) > 0.8*Δ) ? Δ = ϕ*Δ : Δ = Δ)
+		!isnan(ρₖ) && (ρₖ <= η) && (Δ = (1/ϕ)*Δ)
 		
 		# on change le minibatch
 		is_KnetNLPModel && reset_minibatch_train!(nlp)

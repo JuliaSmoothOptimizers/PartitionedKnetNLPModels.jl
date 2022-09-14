@@ -57,7 +57,8 @@ function partitioned_update_solver(nlp :: AbstractNLPModel, B :: AbstractLinearO
 		status = :unknown
 		println("Unknown ❌")
 	end
-	return GenericExecutionStats(status, nlp,
+	return GenericExecutionStats(nlp;
+                         status, 
 												 solution=x,
 												 iter=iter,
 												 dual_feas = nrm_grad,
@@ -123,7 +124,9 @@ function TRCG_KNLP_PUS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
     
 		(ρₖ, fₖ₊₁) = compute_ratio(x, fₖ, sₖ, nlp, B, gₖ) # we compute the ratio
 		# step acceptance + update f,g
-		if ρₖ > η
+    if isnan(ρₖ)
+      @printf "Nan:❌\n"
+    elseif ρₖ > η
       xtmp .= x
 			x .= x .+ sₖ
 			epv_from_epv!(nlp.epv_work, nlp.epv_g)
@@ -131,15 +134,15 @@ function TRCG_KNLP_PUS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 			minus_epv!(nlp.epv_work)
 			add_epv!(nlp.epv_g, nlp.epv_work) # compute epv_y
 			epv_from_v!(nlp.epv_s, sₖ)
-			PartitionedStructures.update!(nlp.eplom_B, nlp.epv_work, nlp.epv_s; name=nlp.name)
+			PartitionedStructures.update!(nlp.eplom_B, nlp.epv_work, nlp.epv_s; name=nlp.name, verbose=false)
 			fₖ = fₖ₊₁
 			@printf "✅\n"
 		else
 			@printf "❌\n"
 		end				
 		# now we update ∆
-		(ρₖ >= η₁) && ((norm(sₖ, 2) > 0.8*Δ) ? Δ = ϕ*Δ : Δ = Δ)
-		(ρₖ <= η) && (Δ = (1/ϕ)*Δ)
+		!isnan(ρₖ) && (ρₖ >= η₁) && ((norm(sₖ, 2) > 0.8*Δ) ? Δ = ϕ*Δ : Δ = Δ)
+		!isnan(ρₖ) && (ρₖ <= η) && (Δ = (1/ϕ)*Δ)
 		
 		# change the minibatch
 		is_KnetNLPModel && reset_minibatch_train!(nlp)
