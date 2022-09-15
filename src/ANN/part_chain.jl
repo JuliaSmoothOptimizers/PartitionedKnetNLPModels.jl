@@ -17,6 +17,7 @@ function PartPSLDP(model; data, dims=1, average=true, o...)
 	C = model.layers[end].out
 	tmp = map(i -> CuArray(zeros(Float32, C)), 1:C)	
 	for (x,y) in data
+    println("average false 1")
 		(scores_pairs_classes, L) = PartPSLDP(model(x; o...), y; dims=dims, average=false)
 		tmp += scores_pairs_classes
 		cnt += L
@@ -26,7 +27,8 @@ end
 		
 function _PartPSLDP(model; data, dims=1, average=true, o...)	
 	(x,y) = data
-	(scores_pairs_classes, L) = PartPSLDP(model(x; o...), y; dims=dims, average=false)
+  # (scores_pairs_classes, L) = PartPSLDP(model(x; o...), y; dims=dims, average=false)
+	(scores_pairs_classes, L) = PartPSLDP(model(x; o...), y; dims=dims, average)
 	acc = sum(sum.(scores_pairs_classes))
 	average ? scores_pairs_classes ./ L : (acc, L)
 end
@@ -39,7 +41,7 @@ function PartPSLDP(scores,labels :: AbstractArray{<:Integer}; dims=1, average=tr
 	classes = (x-> x%C != 0 ? x%C : C ).(indices)
 	indices_scores_classes = map( i -> findall(indice -> indice==i, classes), 1:C ) # select all the indices of each expected classes
 	scores_pairs_classes = map(i -> vec(sum(losses[:, indices_scores_classes[i]], dims=2)), 1:C) # sum the loss of each pair (x,y) having the same y
-	average ? scores_pairs_classes ./ length(labels) : (scores_pairs_classes, length(labels))
+	average ? (scores_pairs_classes ./ length(labels), length(labels)) : (scores_pairs_classes, length(labels))
 end
 
 build_listes_indices(chain :: PartChainPSLDP) = build_listes_indices(PS(chain))
