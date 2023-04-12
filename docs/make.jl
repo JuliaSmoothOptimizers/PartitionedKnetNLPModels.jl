@@ -1,7 +1,6 @@
 using Documenter
 using PartitionedKnetNLPModels
 
-
 makedocs(
   modules = [PartitionedKnetNLPModels],
   doctest = true,
@@ -15,4 +14,8 @@ makedocs(
   pages = Any["Home" => "index.md", "Tutorial" => "tutorial.md", "Reference" => "reference.md"],
 )
 
-deploydocs(repo = "github.com/paraynaud/PartitionedKnetNLPModels.jl.git", push_preview = true, devbranch = "master")
+deploydocs(
+  repo = "github.com/paraynaud/PartitionedKnetNLPModels.jl.git",
+  push_preview = true,
+  devbranch = "master",
+)
