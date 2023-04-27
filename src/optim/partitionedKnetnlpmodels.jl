@@ -53,7 +53,7 @@ function PartitionedKnetNLPModel(chain_ANN :: P;
 	nested_array = build_nested_array_from_vec(chain_ANN, w0)
 	layers_g = similar(params(chain_ANN)) # create a Vector of layer variables
 
-	table_indices = build_listes_indices(chain_ANN)
+	table_indices = build_listes_indices(chain_ANN)  
 	epv_g = partitioned_gradient(chain_ANN, current_training_minibatch, table_indices; n=n)
 	epv_s = similar(epv_g)
 	epv_work = similar(epv_g)
@@ -67,12 +67,12 @@ function PartitionedKnetNLPModel(chain_ANN :: P;
 	Y = typeof(eplom_B)
   V = typeof(nested_array)
 
-	counter= Counter_accuracy(T)
+	counter = Counter_accuracy(T)
 
 	return PartitionedKnetNLPModel{T, Vector{T}, P, Y, V}(meta, n, C, chain_ANN, Counters(), data_train, data_test, size_minibatch, training_minibatch_iterator, test_minibatch_iterator, current_training_minibatch, current_test_minibatch, x0, w0, layers_g, nested_array, epv_g, epv_s, epv_work, epv_res, eplom_B, table_indices, name, counter)
 end
 
-partitioned_gradient!(pknetnlp :: PartitionedKnetNLPModel; data=pknetnlp.current_training_minibatch) = partitioned_gradient!(pknetnlp.chain, data, pknetnlp.table_indices, pknetnlp.epv_g)
+partitioned_gradient!(pknetnlp :: PartitionedKnetNLPModel; data=pknetnlp.current_training_minibatch, kwargs...) = partitioned_gradient!(pknetnlp.chain, data, pknetnlp.table_indices, pknetnlp.epv_g; kwargs...)
 
 function mul_prod!(res:: Vector{T}, pknetnlp :: PartitionedKnetNLPModel{T,S,P}, v :: Vector{T}) where {T<:Number, S, P}
 	eplom_B = pknetnlp.eplom_B

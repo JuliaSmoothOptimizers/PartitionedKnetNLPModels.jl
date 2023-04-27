@@ -34,7 +34,8 @@ function _PartPSLDP(model; data, dims=1, average=true, o...)
 end
 function PartPSLDP(scores,labels :: AbstractArray{<:Integer}; dims=1, average=true)
 	indices = findindices(scores, labels, dims=dims)
-	losses = exp.(scores .- reshape(scores[indices], 1, length(indices))) # diminue par les scores par celui que l'on cherche à obtenir
+	# losses = exp.(scores .- reshape(scores[indices], 1, length(indices))) # diminue par les scores par celui que l'on cherche à obtenir
+  losses = (x -> x^2).(exp.(scores .- reshape(scores[indices], 1, length(indices)))) # test
 	# absence de garantie < 1
 	C = size(scores,1)
 	acc = sum(losses)
@@ -44,6 +45,7 @@ function PartPSLDP(scores,labels :: AbstractArray{<:Integer}; dims=1, average=tr
 	average ? (scores_pairs_classes ./ length(labels), length(labels)) : (scores_pairs_classes, length(labels))
 end
 
+# Return the indices 
 build_listes_indices(chain :: PartChainPSLDP) = build_listes_indices(PS(chain))
 function build_listes_indices(ps_scores :: Vector{Vector{Int}}) 
 	C = length(ps_scores)
@@ -57,7 +59,7 @@ function build_listes_indices(ps_scores :: Vector{Vector{Int}})
 end 
 
 
-function partitioned_gradient(chain :: PartChainPSLDP, data_xy, table_indices :: Matrix{Vector{Int}}; type=Float32, n::Int=length(vcat_arrays_vector(vars)))
+function partitioned_gradient(chain :: PartChainPSLDP, data_xy, table_indices :: Matrix{Vector{Int}}; type=Float32, n::Int=length(vcat_arrays_vector(vars)), α=0.05)
 	vars = Knet.params(chain)		
 	C = size(table_indices)[1]
 	vector_grad_elt = Vector{Elemental_elt_vec{type}}(undef,0)
@@ -78,11 +80,16 @@ function partitioned_gradient(chain :: PartChainPSLDP, data_xy, table_indices ::
 			end
 		end
 	end 
+  # regularization element
+  grad_elt = (type)(α) .* 2 .* vcat_arrays_vector(vars)
+  eev = PartitionedStructures.Elemental_elt_vec(grad_elt, collect(1:n), n)
+  push!(vector_grad_elt, eev)
+
 	epv_grad = PartitionedStructures.create_epv(vector_grad_elt; n=n)
 	return epv_grad
 end 
 
-function partitioned_gradient!(chain :: PartChainPSLDP, data_xy, table_indices :: Matrix{Vector{Int}}, epv_grad :: Elemental_pv{T}) where T <: Number
+function partitioned_gradient!(chain :: PartChainPSLDP, data_xy, table_indices :: Matrix{Vector{Int}}, epv_grad :: Elemental_pv{T}; α=0.05) where T <: Number  
 	vars = Knet.params(chain)		
 	C = size(table_indices)[1]
 	tmp = similar(vars)
@@ -102,5 +109,9 @@ function partitioned_gradient!(chain :: PartChainPSLDP, data_xy, table_indices :
 			end
 		end
 	end 
-	epv_grad
+  count += 1
+  grad_elt = (T)(α) .* 2 .* vcat_arrays_vector(vars)
+  PartitionedStructures.set_eev!(epv_grad, count, grad_elt)				
+
+  return epv_grad
 end 
