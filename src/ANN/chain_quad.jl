@@ -1,4 +1,4 @@
-mutable struct Chain_psloss_quad1 <: KnetNLPModels.Chain
+mutable struct Chain_psloss_quad1 <: PKnetChain
 	layers
 	Chain_psloss_quad1(layers...) = new(layers)
 end
@@ -21,7 +21,7 @@ function myloss_quad1(scores,labels::AbstractArray{<:Integer}; dims=1, average=t
 end
 
 
-mutable struct Chain_psloss_quad2 <: KnetNLPModels.Chain
+mutable struct Chain_psloss_quad2 <: PKnetChain
 	layers
 	Chain_psloss_quad2(layers...) = new(layers)
 end

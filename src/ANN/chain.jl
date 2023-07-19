@@ -4,7 +4,7 @@
 #  Chain_NLL, utilisée pour faire le lien entre les différents layers.
 # Son evaluation contient également la fonction de perte negative log likehood
 # Elle est également utilisé afin de précompilé la structure PS d'un réseau
-struct Chain_NLL <: KnetNLPModels.Chain
+struct Chain_NLL <: PKnetChain
 	layers
 	Chain_NLL(layers...) = new(layers)
 end
@@ -17,7 +17,7 @@ end
 # no_dropout!(c::Chain_NLL,vec_dropout::Vector{Vector{Bool}}) =	map!(l-> l .= ones(Bool, length(l)), vec_dropout, c.layers)
 
 
-mutable struct Chain_PSLAP <: KnetNLPModels.Chain
+mutable struct Chain_PSLAP <: PKnetChain
 	layers
 	Chain_PSLAP(layers...) = new(layers)
 end
@@ -43,7 +43,7 @@ function PSLAP(scores,labels::AbstractArray{<:Integer}; dims=1, average=true)
 end
 
 #PSLEP
-mutable struct Chain_PSLEP <: KnetNLPModels.Chain
+mutable struct Chain_PSLEP <: PKnetChain
 	layers
 	Chain_PSLEP(layers...) = new(layers)
 end
@@ -66,7 +66,7 @@ function PSLEP(scores,labels::AbstractArray{<:Integer}; dims=1, average=true)
 end
 
 #PSLDP
-mutable struct Chain_PSLDP <: KnetNLPModels.Chain
+mutable struct Chain_PSLDP <: PKnetChain
 	layers
 	Chain_PSLDP(layers...) = new(layers)
 end
@@ -100,7 +100,7 @@ function PSLDP(scores,labels::AbstractArray{<:Integer}; dims=1, average=true)
 end
 
 #PSLDP2
-mutable struct Chain_PSLDP2 <: KnetNLPModels.Chain
+mutable struct Chain_PSLDP2 <: PKnetChain
 	layers
 	Chain_PSLDP2(layers...) = new(layers)
 end

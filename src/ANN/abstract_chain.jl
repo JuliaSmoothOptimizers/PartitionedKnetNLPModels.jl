@@ -1,11 +1,12 @@
 using KnetNLPModels
 
-abstract type PartitionedChain end 
+abstract type PKnetChain end
+abstract type PartitionedChain <: PKnetChain end 
 
-# The structures <: KnetNLPModels.Chain are made to link the layers and express the loss function.
-# KnetNLPModels.Chain assume a fiel layer.
-no_dropout!(c::T,vec_dropout::Vector{Vector{Bool}}) where T <: KnetNLPModels.Chain =	map!(l-> l .= ones(Bool, length(l)), vec_dropout, c.layers)
-no_dropout(c::T) where T <: KnetNLPModels.Chain = map(l -> ones(Bool,input(l)), c.layers) 
+# The structures <: PKnetChain are made to link the layers and express the loss function.
+# PKnetChain assume a fiel layer.
+no_dropout!(c::T,vec_dropout::Vector{Vector{Bool}}) where T <: PKnetChain =	map!(l-> l .= ones(Bool, length(l)), vec_dropout, c.layers)
+no_dropout(c::T) where T <: PKnetChain = map(l -> ones(Bool,input(l)), c.layers) 
 
 """
     precompile_ps_struct(network<:Chain)
@@ -15,7 +16,7 @@ It uses `ps_struct` successively onto layers to capture the variables each neuro
 It returns a precompiled PS structure as nested Vector of Integer, each of which informs about the variables (bias included) by each element function.
 The dropout, is not tested for now.
 """
-function precompile_ps_struct(c::T) where T <: KnetNLPModels.Chain 
+function precompile_ps_struct(c::T) where T <: PKnetChain 
 	index = 0
 	precompiled_ps_struct_layers = []
 	for l in c.layers
@@ -32,7 +33,7 @@ end
     
 Compute the partially separable structure of a network represented by the Chain c by performing a forward evaluation.
 """
-function PS_deduction(c::T; dp=no_dropout(c)) where T <: KnetNLPModels.Chain
+function PS_deduction(c::T; dp=no_dropout(c)) where T <: PKnetChain
 	inputs = input(c.layers[1])
 	Dep = Vector{Vector{Int}}(map(i -> zeros(Int,0), 1:inputs)) # dépendance nulles de la taille des entrées
 	length(dp)==length(c.layers) || error("size dropout does not match the network")
@@ -42,4 +43,4 @@ function PS_deduction(c::T; dp=no_dropout(c)) where T <: KnetNLPModels.Chain
 	Dep
 end
 
-PS(c::T) where T <: KnetNLPModels.Chain = PS_deduction(precompile_ps_struct(c))
+PS(c::T) where T <: PKnetChain = PS_deduction(precompile_ps_struct(c))
