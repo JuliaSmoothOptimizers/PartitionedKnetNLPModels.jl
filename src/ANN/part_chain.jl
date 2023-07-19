@@ -6,7 +6,8 @@ struct PartChainPSLDP <: PartitionedChain
 	PartChainPSLDP(layers...) = new(layers)
 end
 (c :: PartChainPSLDP)(x) = (for l in c.layers; x = l(x); end; x)
-(c :: PartitionedKnetNLPModels.PartChainPSLDP)(x) = (for (i,l) in enumerate(c.layers); println(i); x = l(x); end; x)
+# (c :: PartitionedKnetNLPModels.PartChainPSLDP)(x) = (for (i,l) in enumerate(c.layers); println(i); x = l(x); end; x)
+(c :: PartitionedKnetNLPModels.PartChainPSLDP)(x) = (for (i,l) in enumerate(c.layers); x = l(x); end; x)
 
 # fonction partitionnée
 (c :: PartChainPSLDP)(d :: Knet.Data) = PartPSLDP(c; data=d, average=true)
@@ -134,7 +135,7 @@ function partitioned_gradient(chain :: PartChainPSLDP, data_xy, table_indices ::
 		end
 	end 
   # regularization element
-  grad_elt = (type)(α) .* 2 .* vcat_arrays_vector(vars)
+  grad_elt = Vector((type)(α) .* 2 .* vcat_arrays_vector(vars))
   eev = PartitionedStructures.Elemental_elt_vec(grad_elt, collect(1:n), n)
   push!(vector_grad_elt, eev)
 
@@ -163,7 +164,7 @@ function partitioned_gradient!(chain :: PartChainPSLDP, data_xy, table_indices :
 		end
 	end 
   count += 1
-  grad_elt = (T)(α) .* 2 .* vcat_arrays_vector(vars)
+  grad_elt = Vector((T)(α) .* 2 .* vcat_arrays_vector(vars))
   PartitionedStructures.set_eev!(epv_grad, count, grad_elt)				
 
   return epv_grad

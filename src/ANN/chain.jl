@@ -134,7 +134,7 @@ function PSLDP2(scores,labels::AbstractArray{<:Integer}; dims=1, average=true)
   indice_max = mapreduce(i->i, *, size(scores))
   losses = sum(index -> (exp(scores[index] - scalar_factor(index, size_NN_output, indices) * scores[indices[index_indices(index, size_NN_output)]]))^2, 1:indice_max)
   counter = sum(index -> scalar_factor(index, size_NN_output, indices), 1:indice_max)
-  @show counter
+  # @show counter
 
 	# absence de garantie < 1
 	average ? (losses / length(labels)) : (losses, length(labels))

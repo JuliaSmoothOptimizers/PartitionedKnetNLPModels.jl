@@ -25,6 +25,8 @@ mutable struct PartitionedKnetNLPModel{T <: Number, S, C <: PartitionedChain, Y 
 	table_indices :: Matrix{Vector{Int}} # choix arbitraire, à changer peut-être dans le futur
 	name :: Symbol
 	counter:: Counter_accuracy{T}
+  i_train::Int
+  i_test::Int
 end
 
 function PartitionedKnetNLPModel(chain_ANN :: P;
@@ -68,8 +70,10 @@ function PartitionedKnetNLPModel(chain_ANN :: P;
   V = typeof(nested_array)
 
 	counter = Counter_accuracy(T)
-
-	return PartitionedKnetNLPModel{T, Vector{T}, P, Y, V}(meta, n, C, chain_ANN, Counters(), data_train, data_test, size_minibatch, training_minibatch_iterator, test_minibatch_iterator, current_training_minibatch, current_test_minibatch, x0, w0, layers_g, nested_array, epv_g, epv_s, epv_work, epv_res, eplom_B, table_indices, name, counter)
+  i_train = 1
+  i_test = 1
+  
+	return PartitionedKnetNLPModel{T, Vector{T}, P, Y, V}(meta, n, C, chain_ANN, Counters(), data_train, data_test, size_minibatch, training_minibatch_iterator, test_minibatch_iterator, current_training_minibatch, current_test_minibatch, x0, w0, layers_g, nested_array, epv_g, epv_s, epv_work, epv_res, eplom_B, table_indices, name, counter, i_train, i_test)
 end
 
 partitioned_gradient!(pknetnlp :: PartitionedKnetNLPModel; data=pknetnlp.current_training_minibatch, kwargs...) = partitioned_gradient!(pknetnlp.chain, data, pknetnlp.table_indices, pknetnlp.epv_g; kwargs...)
