@@ -66,7 +66,7 @@ pour chaque noeud on va ajouter les dépendances du layer propre (excepté dropo
 on y ajoute ensuite les dépendances (car dense) de la couche précédente modélisé par Di (à modérer avec le dropout)
 Le cas de la couche Dense est particulier, sans dropout il n'a que peu d'intérêt
 """
-function ps(psd::PsDense, dep::Vector{Vector{Int}}; dp=ones(Bool,pss.in))
+function ps(psd::PsDense, dep::Vector{Vector{Int}}; dp=ones(Bool,pss.in))  
 	(out,in) = size(psd)
 	length(dp)==in && psd.dp .= dp
 	if length(dep)==in

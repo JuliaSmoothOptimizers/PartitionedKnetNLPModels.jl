@@ -1,3 +1,5 @@
+# Define some partially-separable loss functions
+
 
 #  Chain_NLL, utilisée pour faire le lien entre les différents layers.
 # Son evaluation contient également la fonction de perte negative log likehood
@@ -6,7 +8,7 @@ struct Chain_NLL <: KnetNLPModels.Chain
 	layers
 	Chain_NLL(layers...) = new(layers)
 end
-(c::Chain_NLL)(x) = (for l in c.layers; x = l(x); end; x) 
+(c::Chain_NLL)(x) = (for l in c.layers; x = l(x); end; x)
 (c::Chain_NLL)(x,y) = nll(c(x),y) # nécessaire
 (c::Chain_NLL)(data :: Tuple{T1,T2}) where {T1,T2} = nll(c(data[1]), data[2], average=true)
 (c::Chain_NLL)(d::Knet.Data) = nll(c; data=d, average=true) 
@@ -96,3 +98,47 @@ function PSLDP(scores,labels::AbstractArray{<:Integer}; dims=1, average=true)
 	acc = sum(scores)
 	average ? (acc / length(labels)) : (acc, length(labels))
 end
+
+#PSLDP2
+mutable struct Chain_PSLDP2 <: KnetNLPModels.Chain
+	layers
+	Chain_PSLDP2(layers...) = new(layers)
+end
+(c::Chain_PSLDP2)(x) = (for l in c.layers; x = l(x); end; x)
+(c::Chain_PSLDP2)(x,y) = PSLDP2(c(x),y)
+(c::Chain_PSLDP2)(data :: Tuple{T1,T2}) where {T1,T2} = _PSLDP2(c; data=data, average=true)
+(c::Chain_PSLDP2)(d::Knet.Data) = PSLDP2(c; data=d, average=true)
+function PSLDP2(model; data, dims=1, average=true, o...)	
+	sum = cnt = 0
+	for (x,y) in data
+		(z,n) = PSLDP2(model(x; o...), y; dims=dims, average=false) 
+		sum += z; cnt += n
+	end
+	average ? sum / cnt : (sum, cnt)
+end
+function _PSLDP2(model; data, dims=1, average=true, o...)	
+	sum = cnt = 0
+	(x,y) = data
+	(z,n) = PSLDP2(model(x; o...), y; dims=dims, average=false) 
+	sum += z; cnt += n
+	average ? sum / cnt : (sum, cnt)
+end
+function PSLDP2(scores,labels::AbstractArray{<:Integer}; dims=1, average=true)
+	indices = findindices(scores,labels,dims=dims)
+	# scores = exp.(scores .- reshape(scores[indices], 1, length(indices))) # diminue par les scores par celui que l'on cherche à obtenir  
+  # scores = (x -> x^2).(exp.(scores .- reshape(scores[indices],1, length(indices)))) .- 1. # test
+  
+  # losses = (x -> x^2).(exp.(scores .- reshape(scores[indices], 1, length(indices))))
+  
+  size_NN_output = size(scores, 1) # 10 for MNIST-CIFAR10, 100 for CIFAR100
+  indice_max = mapreduce(i->i, *, size(scores))
+  losses = sum(index -> (exp(scores[index] - scalar_factor(index, size_NN_output, indices) * scores[indices[index_indices(index, size_NN_output)]]))^2, 1:indice_max)
+  counter = sum(index -> scalar_factor(index, size_NN_output, indices), 1:indice_max)
+  @show counter
+
+	# absence de garantie < 1
+	average ? (losses / length(labels)) : (losses, length(labels))
+end
+
+index_indices(index, size_NN_output) = Int(((index - 1 - (index-1) % size_NN_output)) / size_NN_output +1 )
+scalar_factor(index, size_NN_output, indices) = indices[index_indices(index, size_NN_output)] == index ? 2 : 1

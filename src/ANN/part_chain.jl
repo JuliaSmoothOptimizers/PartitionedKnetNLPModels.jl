@@ -34,8 +34,13 @@ function _PartPSLDP(model; data, dims=1, average=true, o...)
 end
 function PartPSLDP(scores,labels :: AbstractArray{<:Integer}; dims=1, average=true)
 	indices = findindices(scores, labels, dims=dims)
+  # @show size(scores)
+  # @show size(indices)
+  # @show labels
+  # @show indices
 	# losses = exp.(scores .- reshape(scores[indices], 1, length(indices))) # diminue par les scores par celui que l'on cherche à obtenir
   losses = (x -> x^2).(exp.(scores .- reshape(scores[indices], 1, length(indices)))) # test
+  # @show size(losses)
 	# absence de garantie < 1
 	C = size(scores,1)
 	acc = sum(losses)
@@ -44,6 +49,54 @@ function PartPSLDP(scores,labels :: AbstractArray{<:Integer}; dims=1, average=tr
 	scores_pairs_classes = map(i -> vec(sum(losses[:, indices_scores_classes[i]], dims=2)), 1:C) # sum the loss of each pair (x,y) having the same y
 	average ? (scores_pairs_classes ./ length(labels), length(labels)) : (scores_pairs_classes, length(labels))
 end
+
+struct PartChainPSLDP2 <: PartitionedChain
+	layers
+	PartChainPSLDP2(layers...) = new(layers)
+end
+(c :: PartChainPSLDP2)(x) = (for l in c.layers; x = l(x); end; x)
+(c :: PartitionedKnetNLPModels.PartChainPSLDP2)(x) = (for (i,l) in enumerate(c.layers); println(i); x = l(x); end; x)
+
+# fonction partitionnée
+(c :: PartChainPSLDP2)(d :: Knet.Data) = PartPSLDP2(c; data=d, average=true)
+(c :: PartChainPSLDP2)(data :: Tuple{T1,T2}) where {T1,T2} = _PartPSLDP2(c; data=data, average=true)
+
+function PartPSLDP2(model; data, dims=1, average=true, o...)	
+	cnt = 0
+	C = model.layers[end].out
+	tmp = map(i -> CuArray(zeros(Float32, C)), 1:C)	
+	for (x,y) in data
+    println("average false 1")
+		(scores_pairs_classes, L) = PartPSLDP2(model(x; o...), y; dims=dims, average=false)
+		tmp += scores_pairs_classes
+		cnt += L
+	end
+	average ? tmp ./ cnt : (tmp, cnt)
+end
+		
+function _PartPSLDP2(model; data, dims=1, average=true, o...)	
+	(x,y) = data
+  # (scores_pairs_classes, L) = PartPSLDP2(model(x; o...), y; dims=dims, average=false)
+	(scores_pairs_classes, L) = PartPSLDP2(model(x; o...), y; dims=dims, average)
+	acc = sum(sum.(scores_pairs_classes))
+	average ? scores_pairs_classes ./ L : (acc, L)
+end
+function PartPSLDP2(scores,labels :: AbstractArray{<:Integer}; dims=1, average=true)
+	indices = findindices(scores, labels, dims=dims)
+	# losses = exp.(scores .- reshape(scores[indices], 1, length(indices))) # diminue par les scores par celui que l'on cherche à obtenir
+  losses = (x -> x^2).(exp.(scores .- reshape(scores[indices], 1, length(indices)))) # test
+  losses[indices] .-= scores[indices]
+	# absence de garantie < 1
+	C = size(scores,1)
+	acc = sum(losses)
+	classes = (x-> x%C != 0 ? x%C : C ).(indices)
+	indices_scores_classes = map( i -> findall(indice -> indice==i, classes), 1:C ) # select all the indices of each expected classes
+	scores_pairs_classes = map(i -> vec(sum(losses[:, indices_scores_classes[i]], dims=2)), 1:C) # sum the loss of each pair (x,y) having the same y
+	average ? (scores_pairs_classes ./ length(labels), length(labels)) : (scores_pairs_classes, length(labels))
+end
+
+index_indices(index, size_NN_output) = Int(((index - 1 - (index-1) % size_NN_output)) / size_NN_output +1 )
+
 
 # Return the indices 
 build_listes_indices(chain :: PartChainPSLDP) = build_listes_indices(PS(chain))

@@ -72,7 +72,34 @@ function partitioned_linesearch(nlp :: AbstractNLPModel, B :: AbstractLinearOper
 end
 
 
+"""
+LSCG(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
+	x::AbstractVector{T}=copy(nlp.meta.x0),
+	n::Int=nlp.meta.nvar,
+	max_eval::Int=10000,
+	max_iter::Int=10000,
+	max_time :: Float64=30.0,
+	atol::Real=√eps(eltype(x)),
+	rtol::Real=√eps(eltype(x)),
+	start_time::Float64=time(),
+	η::Float64=1e-3,
+	η₁::Float64=0.75, # > η	
+	ϵ::Float64=1e-6,
+	δ::Float64=1.,
+	ϕ::Float64=2.,
+  α::Float64=0.05,
+	∇f₀::AbstractVector=NLPModels.grad(nlp, nlp.meta.x0; ∇f₀),
+	iter_print::Int64=Int(floor(max_iter/100)),
+	is_KnetNLPModel::Bool=false,
+	verbose::Bool=true,
+	data::Bool=true,
+  subsolver=CgSolver(B, x),
+	kwargs...,
+	) where T <: Number
 
+Apply a inexact linesearch using CG.
+Event if `nlp` is typed as an `AbstractNLPModel` it must be a `PartitionedKnetNLPModel`.
+"""
 function LSCG(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	x::AbstractVector{T}=copy(nlp.meta.x0),
 	n::Int=nlp.meta.nvar,
@@ -83,8 +110,7 @@ function LSCG(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	rtol::Real=√eps(eltype(x)),
 	start_time::Float64=time(),
 	η::Float64=1e-3,
-	η₁::Float64=0.75, # > η
-	Δ::Float64=1.,
+	η₁::Float64=0.75, # > η	
 	ϵ::Float64=1e-6,
 	δ::Float64=1.,
 	ϕ::Float64=2.,
@@ -106,7 +132,7 @@ function LSCG(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	∇fNorm2 = nrm2(n, ∇f₀)
 
 	fₖ = NLPModels.obj(nlp, x; α)
-	verbose && @printf "iter temps fₖ      ||gₖ||    ||sₖ||        /100 \n" 
+	verbose && @printf "iter temps fₖ      ||gₖ||    ||sₖ||    β     /100 \n" 
 
 	# cgtol = one(T)  # Must be ≤ 1.
 	# cgtol = max(rtol, min(T(0.1), 9 * cgtol / 10, sqrt(∇fNorm2)))
@@ -114,6 +140,7 @@ function LSCG(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
   cgtol = (T)(0)
 
 	ρₖ = -1
+  β = -1.
 
 	# stop condition
 	absolute(n,gₖ,ϵ) = nrm2(n,gₖ) > ϵ
@@ -131,12 +158,13 @@ function LSCG(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 		data && push_acc!(nlp.counter, acc)
    
     gₜₘₚ .= .- gₖ
-		Krylov.cg!(subsolver, B, gₜₘₚ, atol=T(atol), rtol=cgtol, radius = T(Δ))
+		# Krylov.cg!(subsolver, B, gₜₘₚ, atol=T(atol), rtol=cgtol, radius = T(Δ))
+    Krylov.cg!(subsolver, B, gₜₘₚ, atol=T(atol), rtol=cgtol, linesearch=true)
 		sₖ .= solution(subsolver)  # result of the linear system solved by Krylov.cg    
 
 		β, fₖ₊₁ = linesearch!(x, fₖ, sₖ, nlp, gₖ; vec=xtmp, α) # we compute the ratio
 		# step acceptance + update f,g
-    if fₖ₊₁ != fₖ # if β*sₖ ≂̸ 0
+    if β != -1. # the step exists
 			epv_from_epv!(nlp.epv_work, nlp.epv_g)
 			NLPModels.grad!(nlp, x, gₖ; α)
 			minus_epv!(nlp.epv_work)
@@ -218,6 +246,7 @@ function linesearch!(x::Vector{T},
   if well_defined(β) # update x, fₖ₊₁ is up to date
     x .= vec    
   else # set fₖ₊₁ to fₖ
+    β = -1.
     @printf "❌ β too small! "
     fₖ₊₁ = fₖ
   end

@@ -1,6 +1,6 @@
 using KnetNLPModels
 
-abstract type PartitionedChain <: KnetNLPModels.Chain end 
+abstract type PartitionedChain end 
 
 # The structures <: KnetNLPModels.Chain are made to link the layers and express the loss function.
 # KnetNLPModels.Chain assume a fiel layer.
@@ -9,14 +9,11 @@ no_dropout(c::T) where T <: KnetNLPModels.Chain = map(l -> ones(Bool,input(l)), 
 
 """
     precompile_ps_struct(network<:Chain)
-The function is called on a network defined by Dense/Sep_layer/Conv or an other layer that define also ps_struct(layer); index.
-The result is a precompiled PS structure.
-Il faut déterminer pour chaque couche une fonction ps_struct qui déterminer l'information nécessaire à prendre en compte pour déterminer la séparabilité partielle du réseau.
-Sa forme est très proche de celle du réseau initial, mais chaque arc (ie variable) contient l'indice de la variable.
-Attention il ne faut pas oublier de stocker les biais qui sont également des variables.
-L'objectif est d'ensuite appelé une fonction évaluant rapidement la structure PS du réseau., par propagation des dépendances sur une évaluation backward.
-Pour une analyse de la structure sous influence du dropout j'ai intégré des vecteur booléen indiquant neurones de la couche précédente étaient actifs ou non.
-Cela se modélise par le vecteur dp dans PsDense
+
+The function is called on a network defined by Dense/Sep_layer/Conv layers or any layer defining a `ps_struct(layer)`method.
+It uses `ps_struct` successively onto layers to capture the variables each neuron depends on?.
+It returns a precompiled PS structure as nested Vector of Integer, each of which informs about the variables (bias included) by each element function.
+The dropout, is not tested for now.
 """
 function precompile_ps_struct(c::T) where T <: KnetNLPModels.Chain 
 	index = 0
@@ -32,6 +29,7 @@ end
 
 """
     PS_deduction(c,dp)
+    
 Compute the partially separable structure of a network represented by the Chain c by performing a forward evaluation.
 """
 function PS_deduction(c::T; dp=no_dropout(c)) where T <: KnetNLPModels.Chain
