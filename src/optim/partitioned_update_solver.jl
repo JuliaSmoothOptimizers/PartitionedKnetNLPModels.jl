@@ -90,7 +90,7 @@ function TRCG_KNLP_PUS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
   α::Float64=0.05,
 	∇f₀::AbstractVector=NLPModels.grad(nlp, nlp.meta.x0; α),
 	iter_print::Int64=Int(floor(max_iter/100)),
-	is_KnetNLPModel::Bool=false,
+	is_KnetNLPModel::Bool=true,
 	verbose::Bool=true,
 	data::Bool=true,
 	kwargs...,
@@ -173,7 +173,7 @@ function TRCG_KNLP_PUS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
     end
 		
 		# change the minibatch
-		is_KnetNLPModel && reset_minibatch_train!(nlp)
+		is_KnetNLPModel && minibatch_next_train!(nlp)
 		
 	end
 	@printf "iter temps fₖ norm(gₖ,2) Δ ρₖ accuracy\n" 

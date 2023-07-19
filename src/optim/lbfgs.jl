@@ -83,7 +83,7 @@ function TR_CG_ANLP_LBFGS(nlp :: AbstractKnetNLPModel, B :: AbstractLinearOperat
 	ϕ::Float64=2.,
 	∇f₀::AbstractVector=NLPModels.grad(nlp, x),
 	iter_print::Int64=Int(floor(max_iter/100)),
-	is_KnetNLPModel::Bool=false,	
+	is_KnetNLPModel::Bool=true,	
 	verbose::Bool=true,
 	data::Bool=true,
 	kwargs...,
@@ -138,7 +138,7 @@ function TR_CG_ANLP_LBFGS(nlp :: AbstractKnetNLPModel, B :: AbstractLinearOperat
 		!isnan(ρₖ) && (ρₖ <= η) && (Δ = (1/ϕ)*Δ)
 		
 		# on change le minibatch
-		is_KnetNLPModel && reset_minibatch_train!(nlp)
+		is_KnetNLPModel && minibatch_next_train!(nlp)
 		
 		# periodic printer
 	end
