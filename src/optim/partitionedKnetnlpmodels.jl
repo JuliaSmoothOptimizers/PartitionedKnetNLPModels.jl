@@ -1,6 +1,6 @@
 using CUDA, Knet, KnetNLPModels, MLDatasets, NLPModels
 
-mutable struct PartitionedKnetNLPModel{T <: Number, S, C <: PartitionedChain, Y <: Part_mat{T}, V} <: AbstractKnetNLPModel{T, S}
+mutable struct PartitionedKnetNLPModel{T <: Number, S, C <: PartitionedChain, Y <: Part_mat{T}, V, Z} <: AbstractKnetNLPModel{T, S}
 	meta :: NLPModelMeta{T, S}
 	n :: Int
 	C :: Int
@@ -15,7 +15,7 @@ mutable struct PartitionedKnetNLPModel{T <: Number, S, C <: PartitionedChain, Y 
   current_test_minibatch
 	x0 :: S
 	w :: S # == Vector{T}
-	layers_g :: Vector{Param}
+	layers_g :: Z
 	nested_array :: V
 	epv_g :: Elemental_pv{T}
 	epv_s :: Elemental_pv{T}
@@ -53,7 +53,7 @@ function PartitionedKnetNLPModel(chain_ANN :: P;
 	C = chain_ANN.layers[end].out # assume a last layer separable 
 
 	nested_array = build_nested_array_from_vec(chain_ANN, w0)
-	layers_g = similar(params(chain_ANN)) # create a Vector of layer variables
+	layers_g = similar.(params(chain_ANN)) # create a Vector of layer variables
 
 	table_indices = build_listes_indices(chain_ANN)  
 	epv_g = partitioned_gradient(chain_ANN, current_training_minibatch, table_indices; n=n)

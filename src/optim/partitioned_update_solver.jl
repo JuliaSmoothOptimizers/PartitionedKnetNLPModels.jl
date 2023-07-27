@@ -34,7 +34,7 @@ function partitioned_update_solver(nlp :: AbstractNLPModel, B :: AbstractLinearO
 	println("Start trust-region PQN update using truncated conjugate-gradient, α=", α)
 	(x, iter) = TRCG_KNLP_PUS(nlp, B; α, x, ∇f₀, max_eval=max_eval, max_time=max_time, kwargs...)
 
-	printing && (io = open("src/optim/results/accuracy_PUS_" * string(nlp.name) * ".jl", "w+")	)
+	printing && (io = open("src/optim/results/accuracy_PUS_" * string(nlp.name) * ".jl", "w")	)
 	printing && (write(io, string(nlp.counter.acc)))
 	printing && (close(io))
 	

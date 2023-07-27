@@ -29,7 +29,7 @@ function Generic_LBFGS(nlp :: AbstractKnetNLPModel, B :: AbstractLinearOperator{
 	println("Start trust-region LBFGS using truncated conjugate-gradient")
 	(x,iter) = TR_CG_ANLP_LBFGS(nlp, B; max_eval=max_eval, max_time=max_time, is_KnetNLPModel=true, kwargs...)
 
-	printing && (io = open("src/optim/results/accuracy_LBFGS.jl", "w+")	)
+	printing && (io = open("src/optim/results/accuracy_LBFGS.jl", "w")	)
 	printing && (write(io, string(nlp.counter.acc)))
 	printing && (close(io))
 	
