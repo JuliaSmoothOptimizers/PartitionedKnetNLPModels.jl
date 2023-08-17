@@ -72,8 +72,9 @@ function PartitionedKnetNLPModel(chain_ANN :: P;
 	counter = Counter_accuracy(T)
   i_train = 1
   i_test = 1
-  
-	return PartitionedKnetNLPModel{T, Vector{T}, P, Y, V}(meta, n, C, chain_ANN, Counters(), data_train, data_test, size_minibatch, training_minibatch_iterator, test_minibatch_iterator, current_training_minibatch, current_test_minibatch, x0, w0, layers_g, nested_array, epv_g, epv_s, epv_work, epv_res, eplom_B, table_indices, name, counter, i_train, i_test)
+
+  Z = typeof(layers_g)
+	return PartitionedKnetNLPModel{T, Vector{T}, P, Y, V, Z}(meta, n, C, chain_ANN, Counters(), data_train, data_test, size_minibatch, training_minibatch_iterator, test_minibatch_iterator, current_training_minibatch, current_test_minibatch, x0, w0, layers_g, nested_array, epv_g, epv_s, epv_work, epv_res, eplom_B, table_indices, name, counter, i_train, i_test)
 end
 
 partitioned_gradient!(pknetnlp :: PartitionedKnetNLPModel; data=pknetnlp.current_training_minibatch, kwargs...) = partitioned_gradient!(pknetnlp.chain, data, pknetnlp.table_indices, pknetnlp.epv_g; kwargs...)
