@@ -94,6 +94,7 @@ function PSLDP(scores,labels::AbstractArray{<:Integer}; dims=1, average=true)
 	# scores = exp.(scores .- reshape(scores[indices], 1, length(indices))) # diminue par les scores par celui que l'on cherche à obtenir  
   # scores = (x -> x^2).(exp.(scores .- reshape(scores[indices],1, length(indices)))) .- 1. # test
   scores = (x -> x^2).(exp.(scores .- reshape(scores[indices],1, length(indices))))
+  # scores = (exp.(scores .- reshape(scores[indices],1, length(indices))))
 	# absence de garantie < 1
 	acc = sum(scores)
 	average ? (acc / length(labels)) : (acc, length(labels))

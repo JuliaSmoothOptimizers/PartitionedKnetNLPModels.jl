@@ -32,7 +32,7 @@ function partitioned_linesearch(nlp :: AbstractNLPModel, B :: AbstractLinearOper
 	∇fNorm2 = norm(∇f₀,2)
 
 	println("PQN update using truncated conjugate-gradient, α=", α)
-	(x,iter) = LSCG(nlp, B; α, x, ∇f₀, max_eval=max_eval, max_time=max_time, kwargs...)
+	(x,iter) = LSCG(nlp, B; α, x, ∇f₀, max_eval=max_eval, max_time=max_time, max_iter, kwargs...)
 
 	printing && (io = open("src/optim/results/linesearch_" * string(nlp.name) * ".jl", "w")	)
 	printing && (write(io, string(nlp.counter.acc)))

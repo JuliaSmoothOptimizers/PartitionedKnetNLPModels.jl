@@ -53,7 +53,7 @@ function train_architecture_dataset_for_a_minibatchsize(xtrn, ytrn, xtst, ytst, 
 
   mean_accuracies = reshape(vcat(acc_Adam_LeNet_NLL, acc_Adam_LeNet_PSLDP, acc_Adam_PSNet_NLL, acc_Adam_PSNet_PSLDP), iter_max, 4)
 
-  io = open("AAAI24/results/minbatch$(size_minibatch)/$(name_dataset)/mean_recap.jl", "w")
+  io = open("NLDL24/results/minbatch$(size_minibatch)/$(name_dataset)/mean_recap.jl", "w")
   print(io, "mean_accuracies_$(name_dataset) = ", mean_accuracies)
   close(io)
 end
