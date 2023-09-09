@@ -29,3 +29,6 @@ todo.md
 
 dvpt/
 src/optim/results
+NLDL24/graphs/raw_results/**
+NLDL24/results/**
+NLDL24/**

@@ -51,7 +51,6 @@ CIFAR10
 C = 10 # number of classes
 layer_PS = [35,15,1] 
 
-element_function_indices[1,1]
 LeNet_NLL = () -> PK.Chain_NLL(PK.Conv(5,5,3,6; pool_option=1), PK.Conv(5,5,6,16; pool_option=1), PK.Dense(400,200), PK.Dense(200,100), PK.Dense(100,10,identity))
 LeNet_PSLDP = () -> PK.Chain_PSLDP(PK.Conv(5,5,3,6; pool_option=1), PK.Conv(5,5,6,16; pool_option=1), PK.Dense(400,200), PK.Dense(200,100), PK.Dense(100,10,identity))
 PSNet_NLL = () -> PK.Chain_NLL(PK.Conv(5,5,3,60; pool_option=1), PK.Conv(5,5,60,30; pool_option=1), PK.SL(750, C, layer_PS[1]), PK.SL(C*layer_PS[1], C, layer_PS[2]), PK.SL(C*layer_PS[2], C, layer_PS[3]; f=identity))

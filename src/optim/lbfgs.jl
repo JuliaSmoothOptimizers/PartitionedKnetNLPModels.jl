@@ -94,6 +94,7 @@ function TR_CG_ANLP_LBFGS(nlp :: AbstractKnetNLPModel, B :: AbstractLinearOperat
 	gₖ .= ∇f₀
 	gₜₘₚ = similar(gₖ)
 	yₖ = similar(gₖ)
+  tmp = 
 	∇fNorm2 = nrm2(n, ∇f₀)
 
 	fₖ = NLPModels.obj(nlp, x)	
@@ -125,7 +126,8 @@ function TR_CG_ANLP_LBFGS(nlp :: AbstractKnetNLPModel, B :: AbstractLinearOperat
     if isnan(ρₖ)
       @printf "Nan : ❌\n"
 		elseif ρₖ > η
-			x .= x .+ sₖ; gₜₘₚ .= gₖ
+			x .= x .+ sₖ
+      gₜₘₚ .= gₖ
 			NLPModels.grad!(nlp, x, gₖ); fₖ = fₖ₊₁
 			yₖ .= gₖ .- gₜₘₚ
 			push!(B, sₖ, yₖ)

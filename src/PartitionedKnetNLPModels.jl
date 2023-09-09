@@ -15,6 +15,6 @@ module PartitionedKnetNLPModels
 	export PartitionedKnetNLPModel
 
 	export LBFGS, PLBFGS, PLSR1
-	export PUS, PLS # include PBFGS, PSR1, PLSR1, PSE, PLSE
+	export PUS, PLS, PLS_NA # include PBFGS, PSR1, PLSR1, PSE, PLSE
 	
 end 
