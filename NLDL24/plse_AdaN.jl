@@ -2,7 +2,7 @@ using Revise
 using MLDatasets, Knet
 using IterTools: ncycle, takenth, takewhile
 using KnetNLPModels, NLPModels
-# using PartitionedKnetNLPModels
+using PartitionedKnetNLPModels
 
 include("src/PartitionedKnetNLPModels.jl")
 const PK = PartitionedKnetNLPModels
@@ -31,11 +31,11 @@ Part_PSNet = PK.PartChainPSLDP(PK.Conv(5,5,1,40; pool_option=1), PK.Conv(5,5,40,
 
 #46740
 pknet_nlp_plse = PK.PartitionedKnetNLPModel(Part_PSNet; name=:plse, data_train, data_test, size_minibatch)
-ges_plse_NA100 = PK.PLS_NA(pknet_nlp_plse; max_time, max_iter, printing, α, ϵ)
+ges_plse_NA100 = PK.PLS_AdaN(pknet_nlp_plse; max_time, max_iter, printing, α, ϵ)
 
-io = open("src/optim/results/linesearch_NA_plse.jl", "r")	
+io = open("src/optim/results/linesearch_AdaN_plse.jl", "r")
 s = read(io, String)
-io2 = open("src/optim/results/plse_NA_MNIST_100_new_2.jl", "w")
+io2 = open("src/optim/results/plse_AdaN_MNIST_100_new_1.jl", "w")
 write(io2, s)
 close(io)
 close(io2)

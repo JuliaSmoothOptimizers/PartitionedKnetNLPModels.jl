@@ -35,7 +35,7 @@ ges_plse100 = PK.PLS(pknet_nlp_plse; max_time, max_iter, printing, α, ϵ)
 
 io = open("src/optim/results/linesearch_plse.jl", "r")	
 s = read(io, String)
-io2 = open("src/optim/results/plse_MNIST_100_new_1.jl", "w")	
+io2 = open("src/optim/results/plse_MNIST_100_new_2.jl", "w")	
 write(io2, s)
 close(io)
 close(io2)
