@@ -2,8 +2,8 @@ using LinearOperators, NLPModels, LinearAlgebra, LinearAlgebra.BLAS, Krylov
 using Printf, SolverTools, SolverCore
 
 
-PLS_NA(nlp :: PartitionedKnetNLPModel; kwargs...) = partitioned_linesearch_NA(nlp; is_KnetNLPModel=true, kwargs...)
-function partitioned_linesearch_NA(nlp :: AbstractNLPModel;
+PLS_AdaN(nlp :: PartitionedKnetNLPModel; kwargs...) = partitioned_linesearch_AdaN(nlp; is_KnetNLPModel=true, kwargs...)
+function partitioned_linesearch_AdaN(nlp :: AbstractNLPModel;
 	x::AbstractVector=copy(nlp.meta.x0),
 	T::DataType = eltype(x),
 	kwargs...)
@@ -11,10 +11,10 @@ function partitioned_linesearch_NA(nlp :: AbstractNLPModel;
 	B(nlp) = LinearOperator(T, n, n, true, true, (res, v)-> mul_prod!(res, nlp, v))
 	type_update = nlp.name
 	println("LinearOperator{$T} ✅ from $type_update")
-	return partitioned_linesearch_NA(nlp, B(nlp); x=x, kwargs...)
+	return partitioned_linesearch_AdaN(nlp, B(nlp); x=x, kwargs...)
 end
 
-function partitioned_linesearch_NA(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
+function partitioned_linesearch_AdaN(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
   x::AbstractVector=copy(nlp.meta.x0),
 	max_eval :: Int=10000,
 	max_iter::Int=10000,
@@ -32,9 +32,9 @@ function partitioned_linesearch_NA(nlp :: AbstractNLPModel, B :: AbstractLinearO
 	∇fNorm2 = norm(∇f₀,2)
 
 	println("PQN update using truncated conjugate-gradient, α=", α)
-	(x,iter) = LSCG_NA(nlp, B; α, x, ∇f₀, max_eval=max_eval, max_time=max_time, max_iter, kwargs...)
+	(x,iter) = LSCG_AdaN(nlp, B; α, x, ∇f₀, max_eval=max_eval, max_time=max_time, max_iter, kwargs...)
 
-	printing && (io = open("src/optim/results/linesearch_NA_" * string(nlp.name) * ".jl", "w")	)
+	printing && (io = open("src/optim/results/linesearch_AdaN_" * string(nlp.name) * ".jl", "w")	)
 	printing && (write(io, string(nlp.counter.acc)))
 	printing && (close(io))
 
@@ -71,9 +71,16 @@ function partitioned_linesearch_NA(nlp :: AbstractNLPModel, B :: AbstractLinearO
 												)
 end
 
+function positive_quadratic_roots(a,b,c)
+  Δ = b^2 - 4 * a * c  
+  r1 = (-b + sqrt(Δ)) / (2 * a)
+  r2 = (-b - sqrt(Δ)) / (2 * a)
+  return r1, r2
+end
+
 
 """
-LSCG_NA(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
+LSCG_AdaN(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	x::AbstractVector{T}=copy(nlp.meta.x0),
 	n::Int=nlp.meta.nvar,
 	max_eval::Int=10000,
@@ -100,7 +107,7 @@ LSCG_NA(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 Apply a inexact linesearch using CG.
 Event if `nlp` is typed as an `AbstractNLPModel` it must be a `PartitionedKnetNLPModel`.
 """
-function LSCG_NA(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
+function LSCG_AdaN(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	x::AbstractVector{T}=copy(nlp.meta.x0),
 	n::Int=nlp.meta.nvar,
 	max_eval::Int=10000,
@@ -113,8 +120,7 @@ function LSCG_NA(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	η₁::Float64=0.75, # > η
 	ϵ::Float64=1e-6,
 	δ::Float64=1.,
-	ϕ::Float64=2.,
-  μ=0.9,
+	ϕ::Float64=2.,  
   α::Float64=0.05,
 	∇f₀::AbstractVector=NLPModels.grad(nlp, nlp.meta.x0; ∇f₀),
 	iter_print::Int64=Int(floor(max_iter/100)),
@@ -122,7 +128,10 @@ function LSCG_NA(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	verbose::Bool=true,
 	data::Bool=true,
   linesearch=true,
+  linesearch_option=:basic,
   subsolver=CgSolver(B, x),
+  θₖ=1.,
+  γ=1e-5,
 	kwargs...,
 	) where T <: Number
 
@@ -131,20 +140,12 @@ function LSCG_NA(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
   gₖ = ∇f₀
 	gₜₘₚ = similar(gₖ)
 	sₖ = similar(gₖ)
-  xtmp = similar(gₖ)
 	∇fNorm2 = nrm2(n, ∇f₀)
   
-  
-  vx = similar(x)
-  scaled_step = similar(x)
   v = zeros(T, n)
-  epv_v = similar(nlp.epv_work)
-  epv_from_v!(epv_v, zeros(T, n)) # set vₖ to 0
-
+  vx = similar(x)
+  scaled_step = similar(x)  
   xtmp = similar(x)
-  epv_x_tmp = similar(epv_v)
-  epv_from_v!(epv_x_tmp, zeros(T, n)) # set vₖ to 0
-
 
 	fₖ = NLPModels.obj(nlp, x; α)
 	verbose && @printf "iter temps fₖ      ||gₖ||    ||sₖ||    β     /100 \n"
@@ -162,23 +163,32 @@ function LSCG_NA(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	_max_iter(iter, max_iter) = iter < max_iter
 	_max_time(start_time) = (time() - start_time) < max_time
 	while absolute(n,gₖ,ϵ) && relative(n,gₖ,ϵ,∇fNorm2) && _max_iter(iter, max_iter) & _max_time(start_time) # stop condition
-		iter += 1
+    iter += 1
+
+    b = (θₖ^2 - γ)
+    c = - θₖ^2
+
+    r1, r2 = positive_quadratic_roots(1,b,c)
+    θₖ₊₁ = max(r1, r2)    
+
+    μ = (θₖ * (1 - θₖ))/ (θₖ^2 + θₖ₊₁)
+
     fₖ = NLPModels.obj(nlp, x; α)
     vx .= x .+ μ .* v
     NLPModels.grad!(nlp, vx, gₜₘₚ; α)
+    gₜₘₚ .= .- gₜₘₚ
 
 		(verbose || data ) && (acc = KnetNLPModels.accuracy(nlp))
     verbose && mod(iter, 10) == 0 && @printf "iter temps fₖ      ||gₖ||    ||sₖ||    β     /100 \n"
 		verbose && @printf "%3d %4g %8.1e %7.1e %7.1e %7.1e %8.3e " iter (time() - start_time) fₖ norm(gₖ, 2) norm(sₖ, 2) β acc
 		data && push_acc!(nlp.counter, acc)
-
-    gₜₘₚ .= .- gₜₘₚ
-		# Krylov.cg!(subsolver, B, gₜₘₚ, atol=T(atol), rtol=cgtol, radius = T(Δ))
+    		
     Krylov.cg!(subsolver, B, gₜₘₚ, atol=T(atol), rtol=cgtol, linesearch=true)
 		sₖ .= solution(subsolver)  # result of the linear system solved by Krylov.cg
         
 		if linesearch 
-      (β, fₖ₊₁) = linesearch_NA!(x, fₖ, sₖ, nlp, gₖ; vec=xtmp, α) # we compute the ratio    
+      (linesearch_option == :basic) && (β = basic_linesearch(x, fₖ, sₖ, nlp, gₜₘₚ; vec=xtmp, α)) # we compute the ratio
+      (linesearch_option == :backtracking) && (β = backtracking_linesearch(x, fₖ, sₖ, nlp, gₜₘₚ; vec=xtmp, α)) # we compute the ratio
     else
       β = 1.
       x .= x .+ β .* sₖ
@@ -186,8 +196,7 @@ function LSCG_NA(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
     # if β ≂̸ -1 the x comes out updated
 
 		# step acceptance + update f,g
-    if β != -1. # the step exists
-      xtmp .= x
+    if β != -1. # the step exists      
       v .= μ .* v .+ β .* sₖ
       x .= x .+ v
 
@@ -200,8 +209,7 @@ function LSCG_NA(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 			scaled_step .= β .* sₖ
 			epv_from_v!(nlp.epv_s, scaled_step)
 			
-      PartitionedStructures.update!(nlp.eplom_B, nlp.epv_work, nlp.epv_s; name=nlp.name, verbose=false, reset=4)
-		  fₖ = fₖ₊₁
+      PartitionedStructures.update!(nlp.eplom_B, nlp.epv_work, nlp.epv_s; name=nlp.name, verbose=false, reset=4)		  
 			@printf "✅\n"
 		else
 			@printf "❌\n"
@@ -217,67 +225,4 @@ function LSCG_NA(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
   @printf "%3d %4g %8.1e %8.3e " iter (time() - start_time) fₖ acc
 
 	return (x, iter)
-end
-
-well_defined(β) = β > sqrt(eps(β))
-armijo(fₖ, fₖ₊₁, β, t) = fₖ - fₖ₊₁ ≥ β *  t
-
-"""
-    linesearch_NA!x::Vector{T}, fₖ::T, sₖ::Vector{T}, nlp::AbstractNLPModel{T}, gₖ::AbstractVector{T}; vec=similar(x), c=0.05, τ=2/3, init=1., β = init, α=0.05 ) where T <: Number
-
-Find the step length β.
-"""
-function linesearch_NA!(x::Vector{T},
-  fₖ::T,
-  sₖ::Vector{T},
-  nlp::AbstractNLPModel,
-  gₖ::AbstractVector{T};
-  vec=similar(x),
-  c=0.05,
-  τ=2/3,
-  init=1.,
-  β = init,
-  α=0.05
-) where T <: Number
-  build_v!(nlp.epv_g)
-  m = dot(gₖ, sₖ)
-  t = - c * m
-
-  vec .= x .+ β .* sₖ # xₖ₊₁
-  fₜₘₚ = fₖ
-  fₖ₊₁ = NLPModels.obj(nlp, vec; α)
-  # @printf "β = %8.3e, ||β.*sₖ||= %8.3e, fₖ₊₁= %8.3e\n" β norm(β .* sₖ) fₖ₊₁
-
-  # determining if β may be > 1
-  while armijo(fₖ, fₖ₊₁, β, t) && fₖ₊₁ < fₜₘₚ # stops when armijo fails
-    β = 1/τ * β
-    vec .= x .+ β .* sₖ # xₖ₊₁
-    fₜₘₚ = fₖ₊₁
-    fₖ₊₁ = NLPModels.obj(nlp, vec; α)
-    # @printf "β = %8.3e, ||β.*sₖ||= %8.3e, fₖ₊₁= %8.3e\n" β norm(β .* sₖ) fₖ₊₁
-  end
-
-  if β > init # may be changed
-    β = τ * β
-    vec .= x .+ β .* sₖ # xₖ₊₁
-    fₖ₊₁ = NLPModels.obj(nlp, vec; α)
-  else
-    while well_defined(β)
-      vec .= x .+ β .* sₖ # xₖ₊₁
-      fₖ₊₁ = NLPModels.obj(nlp, vec; α)
-      armijo(fₖ, fₖ₊₁, β, t) ? break : β = τ * β
-      # @printf "β = %8.3e, ||β.*sₖ||= %8.3e, fₖ₊₁= %8.3e\n" β norm(β .* sₖ) fₖ₊₁
-    end
-  end
-
-  if well_defined(β) # update x, fₖ₊₁ is up to date
-    # x .= vec
-  else # set fₖ₊₁ to fₖ
-    β = -1.
-    @printf "❌ β too small! "
-    fₖ₊₁ = fₖ
-  end
-  # @printf "β = %8.3e, ||β.*sₖ||= %8.3e, fₖ₊₁= %8.3e\n" β norm(β .* sₖ) fₖ₊₁
-  # @printf "β = %8.3e ≥ 1, fₖ = %8.3e, fₖ₊₁ = %8.3e \n" β fₖ fₖ₊₁
-	return β, fₖ₊₁, vec
 end

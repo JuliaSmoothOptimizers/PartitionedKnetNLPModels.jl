@@ -121,6 +121,7 @@ function LSCG(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 	verbose::Bool=true,
 	data::Bool=true,
   linesearch=true,
+  linesearch_option=:basic,
   subsolver=CgSolver(B, x),
 	kwargs...,
 	) where T <: Number
@@ -165,7 +166,8 @@ function LSCG(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 
     # x is returned as xₖ₊₁
 		if linesearch 
-      (β, fₖ₊₁) = linesearch_NA!(x, fₖ, sₖ, nlp, gₖ; vec=xtmp, α) # we compute the ratio    
+      (linesearch_option == :basic) && (β = basic_linesearch(x, fₖ, sₖ, nlp, gₜₘₚ; vec=xtmp, α)) # we compute the ratio
+      (linesearch_option == :backtracking) && (β = backtracking_linesearch(x, fₖ, sₖ, nlp, gₜₘₚ; vec=xtmp, α)) # we compute the ratio
     else
       β = 1.
       x .= x .+ β .* sₖ
@@ -184,8 +186,7 @@ function LSCG(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
       scaled_step .= β .* sₖ
 			epv_from_v!(nlp.epv_s, scaled_step)
 			
-      PartitionedStructures.update!(nlp.eplom_B, nlp.epv_work, nlp.epv_s; name=nlp.name, verbose=false, reset=4)
-		  fₖ = fₖ₊₁
+      PartitionedStructures.update!(nlp.eplom_B, nlp.epv_work, nlp.epv_s; name=nlp.name, verbose=false, reset=4)		  
 			@printf "✅\n"
 		else
 			@printf "❌\n"
@@ -202,67 +203,4 @@ function LSCG(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
   @printf "%3d %4g %8.1e %8.3e " iter (time() - start_time) fₖ acc 
 	
 	return (x, iter)
-end
-
-well_defined(β) = β > sqrt(eps(β))
-armijo(fₖ, fₖ₊₁, β, t) = fₖ - fₖ₊₁ ≥ β *  t
-
-"""
-    linesearch!x::Vector{T}, fₖ::T, sₖ::Vector{T}, nlp::AbstractNLPModel{T}, gₖ::AbstractVector{T}; vec=similar(x), c=0.05, τ=2/3, init=1., β = init, α=0.05 ) where T <: Number
-
-Find the step length β.
-"""
-function linesearch!(x::Vector{T},
-  fₖ::T,
-  sₖ::Vector{T},
-  nlp::AbstractNLPModel,
-  gₖ::AbstractVector{T};
-  vec=similar(x),
-  c=0.05,
-  τ=2/3,
-  init=1.,
-  β = init,
-  α=0.05
-) where T <: Number
-  build_v!(nlp.epv_g)
-  m = dot(gₖ, sₖ)
-  t = - c * m 
-    
-  vec .= x .+ β .* sₖ # xₖ₊₁
-  fₜₘₚ = fₖ
-  fₖ₊₁ = NLPModels.obj(nlp, vec; α)
-  # @printf "β = %8.3e, ||β.*sₖ||= %8.3e, fₖ₊₁= %8.3e\n" β norm(β .* sₖ) fₖ₊₁
-
-  # determining if β may be > 1
-  while armijo(fₖ, fₖ₊₁, β, t) && fₖ₊₁ < fₜₘₚ # stops when armijo fails
-    β = 1/τ * β    
-    vec .= x .+ β .* sₖ # xₖ₊₁
-    fₜₘₚ = fₖ₊₁
-    fₖ₊₁ = NLPModels.obj(nlp, vec; α)
-    # @printf "β = %8.3e, ||β.*sₖ||= %8.3e, fₖ₊₁= %8.3e\n" β norm(β .* sₖ) fₖ₊₁
-  end
-
-  if β > init # may be changed    
-    β = τ * β
-    vec .= x .+ β .* sₖ # xₖ₊₁
-    fₖ₊₁ = NLPModels.obj(nlp, vec; α)    
-  else
-    while well_defined(β)
-      vec .= x .+ β .* sₖ # xₖ₊₁
-      fₖ₊₁ = NLPModels.obj(nlp, vec; α)
-      armijo(fₖ, fₖ₊₁, β, t) ? break : β = τ * β 
-      # @printf "β = %8.3e, ||β.*sₖ||= %8.3e, fₖ₊₁= %8.3e\n" β norm(β .* sₖ) fₖ₊₁
-    end  
-  end
-
-  if well_defined(β) # update x, fₖ₊₁ is up to date
-    # x .= vec    
-  else # set fₖ₊₁ to fₖ
-    β = -1.
-    @printf "❌ β too small! "
-    fₖ₊₁ = fₖ
-  end
-  # @printf "β = %8.3e, ||β.*sₖ||= %8.3e, fₖ₊₁= %8.3e\n" β norm(β .* sₖ) fₖ₊₁
-  # @printf "β = %8.3e ≥ 1, fₖ = %8.3e, fₖ₊₁ = %8.3e \n" β fₖ fₖ₊₁
-	return β, fₖ₊₁
 end
