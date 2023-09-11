@@ -39,8 +39,8 @@ function PartPSLDP(scores,labels :: AbstractArray{<:Integer}; dims=1, average=tr
   # @show size(indices)
   # @show labels
   # @show indices
-	# losses = exp.(scores .- reshape(scores[indices], 1, length(indices))) # diminue par les scores par celui que l'on cherche à obtenir
-  losses = (x -> x^2).(exp.(scores .- reshape(scores[indices], 1, length(indices)))) # test
+	losses = exp.(scores .- reshape(scores[indices], 1, length(indices))) # diminue par les scores par celui que l'on cherche à obtenir
+  # losses = (x -> x^2).(exp.(scores .- reshape(scores[indices], 1, length(indices)))) # test
   # @show size(losses)
 	# absence de garantie < 1
 	C = size(scores,1)

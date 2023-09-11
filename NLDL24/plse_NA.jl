@@ -57,7 +57,7 @@ create_minibatch = KnetNLPModels.create_minibatch
 printing = true
 α = 0.
 max_time = Inf
-max_time = 8*3600.
+max_time = 6*3600.
 ϵ = 1e-9
 
 (xtrn, ytrn) = CIFAR10(Tx=Float32, split=:train)[:]; ytrn[ytrn.==0] .= 10

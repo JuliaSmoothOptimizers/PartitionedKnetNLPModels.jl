@@ -170,7 +170,6 @@ function LSCG(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
       (linesearch_option == :backtracking) && (β = backtracking_linesearch(x, fₖ, sₖ, nlp, gₜₘₚ; vec=xtmp, α)) # we compute the ratio
     else
       β = 1.
-      x .= x .+ β .* sₖ
     end
 
 

@@ -175,13 +175,10 @@ function LSCG_NA(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
       (linesearch_option == :backtracking) && (β = backtracking_linesearch(x, fₖ, sₖ, nlp, gₜₘₚ; vec=xtmp, α)) # we compute the ratio
     else
       β = 1.
-      x .= x .+ β .* sₖ
-    end
-    # if β ≂̸ -1 the x comes out updated
+    end    
 
 		# step acceptance + update f,g
     if β != -1. # the step exists
-      xtmp .= x
       v .= μ .* v .+ β .* sₖ
       x .= x .+ v
 

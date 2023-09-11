@@ -12,7 +12,7 @@ printing = true
 α = 0.
 max_time = Inf
 max_time = 32400.
-max_time = 8*3600.
+max_time = 6*3600.
 ϵ = 1e-9
 
 #=
@@ -28,15 +28,16 @@ layer_PS = [24,15,1]
 
 max_iter = 30000
 size_minibatch = 100
+linesearch_option = :backtracking
 Part_PSNet = PK.PartChainPSLDP(PK.Conv(5,5,1,40; pool_option=1), PK.Conv(5,5,40,30; pool_option=1), PK.SL(480, C, layer_PS[1]), PK.SL(C*layer_PS[1], C, layer_PS[2]), PK.SL(C*layer_PS[2], C, layer_PS[3]; f=identity))
 
 #46740
 pknet_nlp_plse = PK.PartitionedKnetNLPModel(Part_PSNet; name=:plse, data_train, data_test, size_minibatch)
-ges_plse_AdaN100 = PK.PLS_AdaN(pknet_nlp_plse; max_time, max_iter, printing, α, ϵ)
+ges_plse_AdaN100 = PK.PLS_AdaN(pknet_nlp_plse; max_time, max_iter, printing, α, ϵ, linesearch_option = :backtracking)
 
 io = open("src/optim/results/linesearch_AdaN_plse.jl", "r")
 s = read(io, String)
-io2 = open("src/optim/results/plse_AdaN_MNIST_100_new_2.jl", "w")
+io2 = open("src/optim/results/plse_AdaN_MNIST_backtracking_1.jl", "w")
 write(io2, s)
 close(io)
 close(io2)
@@ -57,7 +58,7 @@ create_minibatch = KnetNLPModels.create_minibatch
 printing = true
 α = 0.
 max_time = Inf
-max_time = 8*3600.
+max_time = 6*3600.
 ϵ = 1e-9
 
 (xtrn, ytrn) = CIFAR10(Tx=Float32, split=:train)[:]; ytrn[ytrn.==0] .= 10
@@ -76,7 +77,7 @@ Part_PSNet = PK.PartChainPSLDP(PK.Conv(5,5,3,60; pool_option=1), PK.Conv(5,5,60,
 pknet_nlp_plse = PK.PartitionedKnetNLPModel(Part_PSNet; name=:plse, data_train, data_test, size_minibatch)
 ges_plse_AdaN100 = PK.PLS_AdaN(pknet_nlp_plse; max_time, max_iter, printing, α, ϵ, linesearch_option = :backtracking)
 
-io = open("src/optim/results/archive/linesearch_AdaN_plse.jl", "r")	
+io = open("src/optim/results/linesearch_AdaN_plse.jl", "r")	
 s = read(io, String)
 io2 = open("src/optim/results/plse_AdaN_CIFAR10_100_backtracking_1.jl", "w")
 write(io2, s)
