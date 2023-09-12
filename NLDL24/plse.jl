@@ -12,7 +12,7 @@ printing = true
 α = 0.
 # max_time = Inf
 max_time = 32400.
-max_time = 6*3600.
+max_time = 8*3600.
 ϵ = 1e-9
 
 #=
@@ -32,11 +32,11 @@ size_minibatch = 100
 Part_PSNet = PK.PartChainPSLDP(PK.Conv(5,5,1,40; pool_option=1), PK.Conv(5,5,40,30; pool_option=1), PK.SL(480,C,layer_PS[1]),  PK.SL(C*layer_PS[1],C,layer_PS[2]), PK.SL(C*layer_PS[2],C,layer_PS[3];f=identity))
 #46740
 pknet_nlp_plse = PK.PartitionedKnetNLPModel(Part_PSNet; name=:plse, data_train, data_test, size_minibatch)
-ges_plse100 = PK.PLS(pknet_nlp_plse; max_time, max_iter, printing, α, ϵ)
+ges_plse100 = PK.PLS(pknet_nlp_plse; max_time, max_iter, printing, α, ϵ, linesearch_option=:basic)
 
 io = open("src/optim/results/linesearch_plse.jl", "r")	
 s = read(io, String)
-io2 = open("src/optim/results/plse_MNIST_100_new_2.jl", "w")	
+io2 = open("src/optim/results/plse_MNIST_basic_1.jl", "w")
 write(io2, s)
 close(io)
 close(io2)
@@ -74,7 +74,7 @@ create_minibatch = KnetNLPModels.create_minibatch
 printing = true
 α = 0.
 max_time = Inf
-max_time = 6*3600.
+# max_time = 8*3600.
 ϵ = 1e-9
 
 (xtrn, ytrn) = CIFAR10(Tx=Float32, split=:train)[:]; ytrn[ytrn.==0] .= 10
@@ -86,16 +86,17 @@ C = 10
 layer_PS = [35,15,1] 
 
 size_minibatch = 100
-# max_iter = 25000
-max_iter = 50000
-linesearch_option = :backtracking
+max_iter = 25000
+# max_iter = 50000
+
 Part_PSNet = PK.PartChainPSLDP(PK.Conv(5,5,3,60; pool_option=1), PK.Conv(5,5,60,30; pool_option=1), PK.SL(750, C, layer_PS[1]), PK.SL(C*layer_PS[1], C, layer_PS[2]), PK.SL(C*layer_PS[2], C, layer_PS[3]; f=identity))
 pknet_nlp_plse = PK.PartitionedKnetNLPModel(Part_PSNet; name=:plse, data_train, data_test, size_minibatch)
-ges_plse100 = PK.PLS(pknet_nlp_plse; max_time, max_iter, printing, α, ϵ, linesearch_option=:backtracking)
+# ges_plse100 = PK.PLS(pknet_nlp_plse; max_time, max_iter, printing, α, ϵ, linesearch_option=:backtracking)
+ges_plse100 = PK.PLS(pknet_nlp_plse; max_time, max_iter, printing, α, ϵ, linesearch_option=:basic)
 
 io = open("src/optim/results/linesearch_plse.jl", "r")	
 s = read(io, String)
-io2 = open("src/optim/results/plse_CIFAR10_100_backtracking_1.jl", "w")	
+io2 = open("src/optim/results/plse_CIFAR10_100_basic_50epochs.jl", "w")	
 write(io2, s)
 close(io)   
 close(io2)

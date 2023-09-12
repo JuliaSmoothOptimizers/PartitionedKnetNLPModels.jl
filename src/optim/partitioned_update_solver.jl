@@ -141,8 +141,9 @@ function TRCG_KNLP_PUS(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
       xtmp .= x
 			x .= x .+ sₖ
 			epv_from_epv!(nlp.epv_work, nlp.epv_g)
-			NLPModels.grad!(nlp, x, gₖ; α)
 			minus_epv!(nlp.epv_work)
+
+      NLPModels.grad!(nlp, x, gₖ; α)
 			add_epv!(nlp.epv_g, nlp.epv_work) # compute epv_y
 			epv_from_v!(nlp.epv_s, sₖ)
 			# PartitionedStructures.update!(nlp.eplom_B, nlp.epv_work, nlp.epv_s; name=nlp.name, verbose=false)

@@ -33,7 +33,8 @@ function PartitionedKnetNLPModel(chain_ANN :: P;
 					size_minibatch :: Int=100,
 					name=:plbfgs,
 					data_train = begin (xtrn, ytrn) = MNIST.traindata(Float32); ytrn[ytrn.==0] .= 10; (xtrn, ytrn) end,
-					data_test = begin (xtst, ytst) = MNIST.testdata(Float32); ytst[ytst.==0] .= 10; (xtst, ytst) end
+					data_test = begin (xtst, ytst) = MNIST.testdata(Float32); ytst[ytst.==0] .= 10; (xtst, ytst) end,
+          mem=5
 					) where P <: PartitionedChain
 	w0 = vector_params(chain_ANN)
 	x0 = copy(w0)
@@ -60,9 +61,9 @@ function PartitionedKnetNLPModel(chain_ANN :: P;
 	epv_s = similar(epv_g)
 	epv_work = similar(epv_g)
 	epv_res = similar(epv_g)
-	(name==:plbfgs) && (eplom_B = eplo_lbfgs_from_epv(epv_g))
-	(name==:plsr1) && (eplom_B = eplo_lsr1_from_epv(epv_g))
-	(name==:plse) && (eplom_B = eplo_lose_from_epv(epv_g))
+	(name==:plbfgs) && (eplom_B = eplo_lbfgs_from_epv(epv_g; mem))
+	(name==:plsr1) && (eplom_B = eplo_lsr1_from_epv(epv_g; mem))
+	(name==:plse) && (eplom_B = eplo_lose_from_epv(epv_g; mem))
 	(name==:pbfgs) && (eplom_B = epm_from_epv(epv_g))
 	(name==:psr1) && (eplom_B = epm_from_epv(epv_g))
 	(name==:pse) && (eplom_B = epm_from_epv(epv_g))
