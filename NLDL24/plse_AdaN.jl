@@ -43,6 +43,9 @@ write(io2, s)
 close(io)
 close(io2)
 
+io = open("src/optim/results/fp_plbfgs_CIFAR10_100_basic_10.jl", "w")	
+write(io, string(pknet_nlp_plbfgs.w))
+close(io)
 
 #=
 CIFAR10

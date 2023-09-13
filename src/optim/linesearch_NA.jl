@@ -31,8 +31,8 @@ function partitioned_linesearch_NA(nlp :: AbstractNLPModel, B :: AbstractLinearO
 	NLPModels.grad!(nlp, x₀, ∇f₀; α)
 	∇fNorm2 = norm(∇f₀,2)
 
-	println("PQN update using truncated conjugate-gradient, α=", α)
-	(x,iter) = LSCG_NA(nlp, B; α, x, ∇f₀, max_eval=max_eval, max_time=max_time, max_iter, kwargs...)
+	println(string(nlp.name) * "update using truncated conjugate-gradient, α=", α, " ϵ=", ϵ)
+	(x,iter) = LSCG_NA(nlp, B; α, x, ∇f₀, max_eval=max_eval, max_time=max_time, max_iter, ϵ, kwargs...)
 
 	printing && (io = open("src/optim/results/linesearch_NA_" * string(nlp.name) * ".jl", "w")	)
 	printing && (write(io, string(nlp.counter.acc)))
@@ -163,7 +163,7 @@ function LSCG_NA(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
     gₜₘₚ .= .- gₜₘₚ
 
 		(verbose || data ) && (acc = KnetNLPModels.accuracy(nlp))
-    verbose && mod(iter, 10) == 0 && @printf "iter temps fₖ      ||gₖ||    ||sₖ||    β     /100 \n"
+    verbose && mod(iter, 10) == 0 && @printf "iter temps fₖ      ||gₖ||    ||sₖ||    β     /100 -- PLS_NA_%s \n" string(nlp.name)
 		verbose && @printf "%3d %4g %8.1e %7.1e %7.1e %7.1e %8.3e " iter (time() - start_time) fₖ norm(gₖ, 2) norm(sₖ, 2) β acc
 		data && push_acc!(nlp.counter, acc)
 
