@@ -169,9 +169,10 @@ function LSCG_AdaN(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
     c = - θₖ^2
 
     r1, r2 = positive_quadratic_roots(1,b,c)
-    θₖ₊₁ = max(r1, r2)    
+    θₖ₊₁ = max(r1, r2)
 
     μ = (θₖ * (1 - θₖ))/ (θₖ^2 + θₖ₊₁)
+    θₖ = θₖ₊₁
 
     fₖ = NLPModels.obj(nlp, x; α)
     vx .= x .+ μ .* v
@@ -210,7 +211,9 @@ function LSCG_AdaN(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
       PartitionedStructures.update!(nlp.eplom_B, nlp.epv_work, nlp.epv_s; name=nlp.name, verbose=false, reset=4)		  
 			@printf "✅\n"
 		else
-			@printf "❌\n"
+      v .= μ .* v
+      x .= x .+ v
+      @printf "❌\n"
 		end
 
 		is_KnetNLPModel && minibatch_next_train!(nlp) # change the minibatch

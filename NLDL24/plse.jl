@@ -100,3 +100,8 @@ io2 = open("src/optim/results/plse_CIFAR10_100_basic_50epochs.jl", "w")
 write(io2, s)
 close(io)   
 close(io2)
+
+io = open("src/optim/results/fp_plse_CIFAR10_100_basic_50epochs.jl", "w")	
+write(io, string(pknet_nlp_plse.w))
+close(io)
+
