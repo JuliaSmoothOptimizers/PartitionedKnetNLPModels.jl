@@ -27,3 +27,6 @@ for minibatch of size:
   - 
 
 - minbatch100, PLSE seul, permiers signe d'augmentation au bout de 2 epoques et pas avant
+
+
+supprimer le carré de PSLDP 

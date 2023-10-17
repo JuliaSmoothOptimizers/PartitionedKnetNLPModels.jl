@@ -106,4 +106,4 @@ mean_std_methods = ["SGD", "Adam", "lbfgs"]
 # all_graphs(mean_std_methods, dataset; debug=true)
 
 one_graph(mean_std_methods; dataset= "MNIST", run_number=2, epoch_max=50, debug=true)
-one_graph(mean_std_methods; dataset= "CIFAR10", run_number=1, epoch_max=100, debug=true)
+one_graph(mean_std_methods; dataset= "CIFAR10", run_number=2, epoch_max=100, debug=true)

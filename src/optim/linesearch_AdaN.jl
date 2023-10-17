@@ -213,6 +213,7 @@ function LSCG_AdaN(nlp :: AbstractNLPModel, B :: AbstractLinearOperator{T};
 		else
       v .= μ .* v
       x .= x .+ v
+      θₖ=1.
       @printf "❌\n"
 		end
 
